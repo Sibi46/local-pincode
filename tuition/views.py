@@ -287,6 +287,8 @@ def lesson_detail(request, uid):
 
 @login_required
 def batch_edit(request, lesson_id=None, uid=None):
+    if uid:
+        return group_edit(request, uid)
     obj = get_object_or_404(m.Batch, uid=uid) if uid else m.Batch(lesson=get_object_or_404(m.Lesson, uid=lesson_id))
     perm.own(request.user, obj.lesson.teacher)
     form = f.BatchForm(request.POST or None, instance=obj)
@@ -960,3 +962,25 @@ def tuition_notifications(request):
     perm.active(request.user)
     items = request.user.notifications.filter(link__startswith='/tuition/').order_by('-created_at', '-pk')
     return page(request, 'Tuition notifications', template='tuition/notifications.html', notification_page=Paginator(items, 30).get_page(request.GET.get('page')), unread_count=items.filter(is_read=False).count())
+
+
+@login_required
+def group_edit(request, uid):
+    batch = get_object_or_404(m.Batch.objects.select_related('lesson__teacher'), uid=uid)
+    perm.own(request.user, batch.lesson.teacher)
+    if batch.lesson.teacher.status != 'approved':
+        raise PermissionDenied
+    rules = list(batch.rules.filter(active=True).order_by('weekday', 'start_time'))
+    initial = {'name': batch.name, 'capacity': batch.capacity, 'mode': batch.mode,
+        'location': batch.location, 'new_subjects': ','.join(batch.lesson.subjects.values_list('name', flat=True)),
+        'weekdays': list({str(rule.weekday) for rule in rules}),
+        'meeting_url': rules[0].meeting_url if rules else ''}
+    for day, label in m.DAYS:
+        initial['day_start_' + str(day)] = ','.join(rule.start_time.strftime('%H:%M') for rule in rules if rule.weekday == day)
+    form = f.GroupCreateForm(request.POST or None, instance=batch.lesson, initial=initial)
+    form.editing_group = True
+    form.fields['status'] = forms.ChoiceField(choices=m.Batch._meta.get_field('status').choices, initial=batch.status)
+    def save(form):
+        svc.edit_group(request.user, batch, form)
+        return reverse('tuition:batch', args=[batch.uid])
+    return form_page(request, 'Edit group', form, save, template='tuition/group_form.html')

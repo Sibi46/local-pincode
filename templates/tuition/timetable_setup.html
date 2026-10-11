@@ -1,6 +1,6 @@
 {% for profile in timetable_profiles %}
 <section class="card teacher-tools" id="teaching-{{ profile.uid }}" aria-label="{{ profile.name }} teaching tools">
-  <p class="eyebrow">MY TEACHING PROFILE</p><h2>{{ profile.name }}</h2>
+  <p class="eyebrow">TEACHING</p><h2>{{ profile.name }}</h2>
   <p class="learning-status">{{ profile.get_status_display }}</p>
   {% if profile.status != 'suspended' and profile.status != 'rejected' %}
     <nav class="quick-actions" aria-label="Main teaching actions">
@@ -8,6 +8,8 @@
       <a href="{% url 'tuition:timetable' %}"><span aria-hidden="true">&#9638;</span><strong>Timetable</strong><small>See your days and class times</small></a>
       <a href="{% url 'tuition:activity_upload' 'teacher' profile.uid %}"><span aria-hidden="true">&#8593;</span><strong>Upload photo / video</strong><small>Add to your teaching gallery</small></a>
       <a href="{% url 'tuition:teacher' profile.uid %}"><span aria-hidden="true">&#9776;</span><strong>Applications &amp; records</strong><small>Open your teacher dashboard</small></a>
+      <a href="{% url 'tuition:teacher_edit' profile.uid %}"><span aria-hidden="true">&#9998;</span><strong>Edit profile</strong><small>Name, logo, banner &amp; subjects</small></a>
+      <a href="{% url 'tuition:teacher_hub' profile.uid %}"><span aria-hidden="true">&#9639;</span><strong>Gallery &amp; activities</strong><small>Manage uploads and events</small></a>
     </nav>
   {% endif %}
   {% if profile.status == 'approved' %}
@@ -17,15 +19,15 @@
         <nav aria-label="{{ group.name }} actions">
           {% if group.status == 'active' %}<a class="group-primary" href="{% url 'tuition:group_students' group.uid %}">+ Add student</a>{% endif %}
           <a href="{% url 'tuition:batch' group.uid %}">Students &amp; classes</a>
-          {% if group.status == 'active' %}<a href="{% url 'tuition:schedule' group.uid %}">Change class times</a>{% endif %}
+          <a href="{% url 'tuition:batch_edit' group.uid %}">Edit group &amp; times</a>
         </nav>
-        <details class="tool-settings"><summary>More group options</summary><nav aria-label="More group options"><a href="{% url 'tuition:batch_edit' group.uid %}">Edit group</a>{% if group.status == 'active' %}<a href="{% url 'tuition:session_create' group.uid %}">Add one-time class</a>{% endif %}<a class="action-danger" href="{% url 'tuition:delete_unused' 'group' group.uid %}">Delete group</a></nav></details>
+        <nav class="secondary-actions" aria-label="Other group actions">{% if group.status == 'active' %}<a href="{% url 'tuition:session_create' group.uid %}">Add one-time class</a>{% endif %}<a class="action-danger" href="{% url 'tuition:delete_unused' 'group' group.uid %}">Delete group</a></nav>
       </div>{% empty %}<p>{{ lesson.name }} has no group yet. <a href="{% url 'tuition:batch_create' lesson.uid %}">Create group</a></p>{% endfor %}
     {% empty %}<p>No groups yet. Use Create group above, then add your students.</p>{% endfor %}
   {% else %}<p>Your profile must be approved before you can create groups.</p>{% endif %}
   {% if profile.status != 'suspended' and profile.status != 'rejected' %}
     {% if profile.kind == 'academy' %}<h3>Academy team</h3><nav aria-label="Academy team"><a href="{% url 'tuition:staff_create' profile.uid %}">+ Add teacher</a><a href="{% url 'tuition:academy_staff' profile.uid %}">Manage teachers</a><a href="{% url 'tuition:branch_create' profile.uid %}">+ Add branch</a></nav>{% endif %}
-    <details class="tool-settings"><summary>Profile settings &amp; gallery</summary><nav aria-label="Profile settings"><a href="{% url 'tuition:teacher_edit' profile.uid %}">Edit profile, logo &amp; banner</a><a href="{% url 'tuition:teacher_hub' profile.uid %}">Manage uploads &amp; activities</a>{% if profile.status == 'approved' %}<a href="{% url 'tuition:profile' profile.slug %}">View public profile</a>{% endif %}<a class="action-danger" href="{% url 'tuition:delete_unused' 'teacher' profile.uid %}">Delete profile</a></nav></details>
+    <nav class="secondary-actions" aria-label="Public profile and deletion">{% if profile.status == 'approved' %}<a href="{% url 'tuition:profile' profile.slug %}">View public profile</a>{% endif %}<a class="action-danger" href="{% url 'tuition:delete_unused' 'teacher' profile.uid %}">Delete profile</a></nav>
   {% endif %}
 </section>
 {% endfor %}
