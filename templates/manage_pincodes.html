@@ -18,18 +18,16 @@
     <form method="GET" action="/super-admin/pincodes/" class="ap-form" id="distSelector">
       <div class="ap-form-group">
         <label>State</label>
-        <select name="state_filter" class="ap-input" id="stateFilter" onchange="filterDist(this.value)">
+        <select name="state_filter" class="ap-input" id="stateFilter" onchange="document.getElementById('distSelect').value='';this.form.submit()">
           <option value="">All States</option>
-          {% for d in districts %}
-            {% ifchanged d.state.pk %}
-            <option value="{{ d.state.pk }}" {% if selected and selected.state.pk == d.state.pk %}selected{% endif %}>{{ d.state.name }}</option>
-            {% endifchanged %}
+          {% for state in states %}
+            <option value="{{ state.pk }}" {% if state_filter == state.pk|stringformat:'s' %}selected{% endif %}>{{ state.name }}</option>
           {% endfor %}
         </select>
       </div>
       <div class="ap-form-group">
         <label>District</label>
-        <select name="district_id" class="ap-input" id="distSelect" onchange="this.form.action='/super-admin/pincodes/'+this.value+'/';this.form.submit()">
+        <select name="district_id" class="ap-input" id="distSelect" onchange="this.form.submit()">
           <option value="">-- Select District --</option>
           {% for d in districts %}
           <option value="{{ d.pk }}" data-state="{{ d.state.pk }}"
@@ -39,6 +37,7 @@
           {% endfor %}
         </select>
       </div>
+      <button type="submit" class="ap-btn ap-btn-primary">Show PIN codes</button>
     </form>
   </div>
 
@@ -104,16 +103,5 @@
   {% endif %}
 </div>
 
-<script>
-function filterDist(stateId) {
-  const sel = document.getElementById('distSelect');
-  [...sel.options].forEach(opt => {
-    if (!opt.value) return;
-    opt.hidden = stateId && opt.dataset.state !== stateId;
-  });
-  sel.value = '';
-}
-// On load, filter to the selected state
-{% if selected %}filterDist('{{ selected.state.pk }}');{% endif %}
-</script>
+
 {% endblock %}

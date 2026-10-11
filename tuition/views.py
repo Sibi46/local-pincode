@@ -192,7 +192,7 @@ def register_teacher(request, uid=None, academy_id=None):
 @login_required
 def dashboard(request):
     perm.active(request.user)
-    owned = m.TeacherProfile.objects.filter(owner=request.user).prefetch_related('lessons__batches')
+    owned = m.TeacherProfile.objects.filter(owner=request.user).exclude(status='suspended').prefetch_related('lessons__batches')
     return page(request, 'Your learning space', template='tuition/learn.html', owned=owned, timetable_profiles=owned, learners=perm.learners(request.user), claimable=m.Application.objects.filter(uid__in=request.session.get('tuition_receipts', []), applicant__isnull=True),
         guardian_requests=m.GuardianLink.objects.filter(user=request.user), applications=m.Application.objects.filter(applicant=request.user),
         notifications=request.user.notifications.filter(link__startswith='/tuition/').order_by('-created_at')[:30])

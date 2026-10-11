@@ -78,8 +78,8 @@ class TeacherForm(SubjectEntryForm):
     opening_days = forms.MultipleChoiceField(choices=m.DAYS, required=False, widget=forms.CheckboxSelectMultiple, label='Opening days')
     opening_time = forms.TimeField(required=False, label='Opening time (India)')
     closing_time = forms.TimeField(required=False, label='Closing time (India)')
-    profile_photo = forms.FileField(required=False, label='Logo upload', help_text='Shown beside your name at the top of your public profile.')
-    banner_photo = forms.FileField(required=False, label='Banner upload', help_text='Shown behind your name in the top section of your public profile. Use a wide image.')
+    profile_photo = forms.FileField(required=False, label='Logo / profile image', help_text='Crop to 400 x 400 px (square). Choose an image, adjust the crop, then select Use cropped image.')
+    banner_photo = forms.FileField(required=False, label='Banner upload', help_text='Crop to 1600 x 600 px. Keep important details near the centre; the edges may crop further on mobile.')
     publish_brand_images = forms.BooleanField(required=False, label='Publish my profile and banner images', help_text='I confirm these images contain no recognizable students. For student photos, use the gallery and consent process.')
     service_pins = forms.CharField(required=False, help_text='Comma-separated six-digit PIN codes served.')
 
@@ -105,6 +105,9 @@ class TeacherForm(SubjectEntryForm):
         super().__init__(*args, **kwargs)
         self.fields.pop('subjects')
         self.fields.pop('public_fees')
+        self.fields['max_age'].widget.attrs['placeholder'] = '0'
+        if not self.instance.pk and not self.is_bound:
+            self.initial['max_age'] = None
         for key, label in m.TeacherProfile.CATEGORY_CHOICES:
             field_name = 'category_' + key
             self.fields[field_name] = forms.CharField(required=False, max_length=1000,

@@ -14,6 +14,7 @@
 </head>
 <body>
 
+{% block site_header %}
 <nav class="navbar"{% if '/health/guide' in request.path %} style="display:none"{% endif %}>
     <div class="nav-container">
         <a href="/" class="nav-logo"><img src="/static/images/ourpincod.jpeg" alt="OUR PINCODE" style="height:40px;width:auto;max-width:140px;object-fit:contain;display:block;"></a>
@@ -267,6 +268,7 @@
         {% endif %}
     </div>
 </nav>
+{% endblock site_header %}
 
 {% if messages %}
 <div class="toast-container" id="toastContainer" style="display:none!important">

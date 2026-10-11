@@ -3,6 +3,15 @@
   if (!categories) return;
   const fields = document.querySelectorAll('[data-teaching-field^="category_"]');
   const legacy = document.querySelector('[data-teaching-field="new_subjects"]');
+  fields.forEach(field => {
+    const key = field.dataset.teachingField.slice(9);
+    const checkbox = Array.from(categories.querySelectorAll('input[type="checkbox"]')).find(input => input.value === key);
+    if (checkbox) {
+      const row = checkbox.closest('label').parentElement;
+      row.classList.add('category-subject-row');
+      row.appendChild(field);
+    }
+  });
   function update() {
     const selected = new Set(Array.from(categories.querySelectorAll('input:checked')).map(input => input.value));
     fields.forEach(field => {
