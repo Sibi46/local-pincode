@@ -290,6 +290,7 @@ def batch_edit(request, lesson_id=None, uid=None):
     obj = get_object_or_404(m.Batch, uid=uid) if uid else m.Batch(lesson=get_object_or_404(m.Lesson, uid=lesson_id))
     perm.own(request.user, obj.lesson.teacher)
     form = f.BatchForm(request.POST or None, instance=obj)
+    form.editing_group = bool(obj.pk)
     def save(form):
         svc.lock_teacher(request.user, obj.lesson.teacher)
         batch = form.save(commit=False)
@@ -309,7 +310,7 @@ def batch_edit(request, lesson_id=None, uid=None):
                 svc.notify(f'class:{session.pk}:{session.revision}', 'Class cancelled', ids)
         svc.audit(request.user, batch, 'batch_saved')
         return reverse('tuition:batch', args=[batch.uid])
-    return form_page(request, 'Batch details', form, save)
+    return form_page(request, 'Edit group' if obj.pk else 'Create group', form, save, template='tuition/group_form.html')
 
 
 @login_required

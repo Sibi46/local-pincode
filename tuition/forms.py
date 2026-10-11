@@ -273,9 +273,14 @@ class GroupMemberForm(forms.Form):
 
 
 class BatchForm(StyledForm):
+    def main_fields(self):
+        return list(self)
+
     class Meta:
         model = m.Batch
         fields = ['name', 'capacity', 'location', 'mode', 'status']
+        labels = {'name': 'Group name', 'capacity': 'Maximum students', 'location': 'Class address'}
+
 
 
 class AvailabilityForm(StyledForm):
