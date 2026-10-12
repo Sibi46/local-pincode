@@ -1157,6 +1157,7 @@ document.addEventListener('DOMContentLoaded',function(){
     start();
   });
   document.addEventListener('submit',function(e){
+    if(e.defaultPrevented)return;
     if(e.target&&e.target.tagName==='FORM'&&e.target.method!=='dialog')start();
   });
   window.addEventListener('pageshow',finish);

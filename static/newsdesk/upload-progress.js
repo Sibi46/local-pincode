@@ -26,7 +26,7 @@
     xhr.upload.onprogress = event => {
       if (event.lengthComputable) {
         const percent = Math.round(event.loaded / event.total * 100);
-        bar.value = percent;
+        bar.hidden = false; bar.value = percent;
         status.textContent = `Uploading: ${percent}%`;
       } else { bar.removeAttribute('value'); status.textContent = 'Uploading…'; }
     };
