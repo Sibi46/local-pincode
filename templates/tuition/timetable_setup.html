@@ -5,11 +5,11 @@
   {% if profile.status != 'suspended' and profile.status != 'rejected' %}
     <nav class="quick-actions" aria-label="Main teaching actions">
       {% if profile.status == 'approved' %}<a href="{% url 'tuition:group_create' profile.uid %}"><span aria-hidden="true">+</span><strong>Create group</strong><small>Set subjects and class times</small></a>{% endif %}
-      <a href="{% url 'tuition:timetable' %}"><span aria-hidden="true">&#9638;</span><strong>Timetable</strong><small>See your days and class times</small></a>
-      <a href="{% url 'tuition:activity_upload' 'teacher' profile.uid %}"><span aria-hidden="true">&#8593;</span><strong>Upload photo / video</strong><small>Add to your teaching gallery</small></a>
-      <a href="{% url 'tuition:teacher' profile.uid %}"><span aria-hidden="true">&#9776;</span><strong>Applications &amp; records</strong><small>Open your teacher dashboard</small></a>
+{% if not simple_workflow %}      <a href="{% url 'tuition:timetable' %}"><span aria-hidden="true">&#9638;</span><strong>Timetable</strong><small>See your days and class times</small></a>{% endif %}
+      <a href="{% url 'tuition:activity_upload' 'teacher' profile.uid %}"><span aria-hidden="true">&#8593;</span><strong>Upload gallery</strong><small>Add photos and flick videos</small></a>
+{% if not simple_workflow %}      <a href="{% url 'tuition:teacher' profile.uid %}"><span aria-hidden="true">&#9776;</span><strong>Applications &amp; records</strong><small>Open your teacher dashboard</small></a>{% endif %}
       <a href="{% url 'tuition:teacher_edit' profile.uid %}"><span aria-hidden="true">&#9998;</span><strong>Edit profile</strong><small>Name, logo, banner &amp; subjects</small></a>
-      <a href="{% url 'tuition:teacher_hub' profile.uid %}"><span aria-hidden="true">&#9639;</span><strong>Gallery &amp; activities</strong><small>Manage uploads and events</small></a>
+{% if not simple_workflow %}      <a href="{% url 'tuition:teacher_hub' profile.uid %}"><span aria-hidden="true">&#9639;</span><strong>Gallery &amp; activities</strong><small>Manage uploads and events</small></a>{% endif %}
     </nav>
   {% endif %}
   {% if profile.status == 'approved' %}
@@ -21,7 +21,7 @@
           <a href="{% url 'tuition:batch' group.uid %}">Students &amp; classes</a>
           <a href="{% url 'tuition:batch_edit' group.uid %}">Edit group &amp; times</a>
         </nav>
-        <nav class="secondary-actions" aria-label="Other group actions">{% if group.status == 'active' %}<a href="{% url 'tuition:session_create' group.uid %}">Add one-time class</a>{% endif %}<a class="action-danger" href="{% url 'tuition:delete_unused' 'group' group.uid %}">Delete group</a></nav>
+{% if not simple_workflow %}        <nav class="secondary-actions" aria-label="Other group actions">{% if group.status == 'active' %}<a href="{% url 'tuition:session_create' group.uid %}">Add one-time class</a>{% endif %}<a class="action-danger" href="{% url 'tuition:delete_unused' 'group' group.uid %}">Delete group</a></nav>{% endif %}
       </div>{% empty %}<p>{{ lesson.name }} has no group yet. <a href="{% url 'tuition:batch_create' lesson.uid %}">Create group</a></p>{% endfor %}
     {% empty %}<p>No groups yet. Use Create group above, then add your students.</p>{% endfor %}
   {% else %}<p>Your profile must be approved before you can create groups.</p>{% endif %}

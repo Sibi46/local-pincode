@@ -343,6 +343,14 @@ class LearnerForm(StyledForm):
             today = timezone.localdate()
             data['age'] = today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
             self.instance.age_as_of = today
+        age = data.get('age')
+        if age is None and not self.errors.get('dob'):
+            self.add_error('age', 'Enter date of birth or age.')
+        if age is not None and age < 18:
+            if not data.get('guardian_name'):
+                self.add_error('guardian_name', 'Enter the parent or guardian name for a student under 18.')
+            if not data.get('phone'):
+                self.add_error('phone', 'Enter the parent or guardian phone number.')
         if self.instance.pk:
             return data
         if data.get('self_registration'):

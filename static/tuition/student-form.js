@@ -12,6 +12,21 @@
   }
   const self = form.querySelector('[name="self_registration"]');
   function guardianFields() {
+    const minor = age.value !== '' && Number(age.value) >= 0 && Number(age.value) < 18;
+    const guardian = form.querySelector('[name="guardian_name"]');
+    if (guardian) {
+      guardian.closest('[data-student-field]').hidden = !minor;
+      guardian.disabled = !minor; guardian.required = minor;
+      const label = form.querySelector('label[for="'+guardian.id+'"]');
+      if (label) label.textContent = 'Parent / guardian name *';
+    }
+    const phone = form.querySelector('[name="phone"]');
+    if (phone) {
+      phone.required = minor;
+      const label = form.querySelector('label[for="'+phone.id+'"]');
+      if (label) label.textContent = minor ? 'Parent / guardian phone *' : 'Phone (optional)';
+    }
+    if (self && minor) self.checked = false;
     if (!self) return;
     for (const name of ['relationship', 'attestation']) {
       const field = form.querySelector('[name="'+name+'"]');
@@ -22,5 +37,7 @@
   }
   if(self) self.addEventListener('change', guardianFields);
   guardianFields();
-  dob.addEventListener('input', updateAge); updateAge();
+  dob.addEventListener('input', () => { updateAge(); guardianFields(); });
+  age.addEventListener('input', guardianFields);
+  updateAge(); guardianFields();
 })();
