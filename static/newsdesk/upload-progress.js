@@ -14,24 +14,29 @@
     if (busy || !form.reportValidity()) return;
     const data = new FormData(form);
     busy = true; button.disabled = true; button.textContent = 'Uploading…';
-    panel.hidden = false; bar.value = 0; status.textContent = 'Uploading: 0%';
+    panel.hidden = false; bar.hidden = false; bar.value = 0; status.textContent = 'Uploading: 0%';
+    panel.removeAttribute('role'); panel.style.cssText = '';
     form.setAttribute('aria-busy', 'true');
     const xhr = new XMLHttpRequest();
     xhr.open('POST', form.action || window.location.href);
     xhr.timeout = 300000;
     const finish = message => {
       busy = false; button.disabled = false; button.textContent = original;
-      form.removeAttribute('aria-busy'); status.textContent = message;
+      form.removeAttribute('aria-busy'); bar.hidden = true;
+      status.textContent = 'Story not confirmed saved. ' + message;
+      panel.setAttribute('role', 'alert'); panel.tabIndex = -1;
+      panel.style.cssText = 'padding:16px;margin:16px 0;border:1px solid #b42318;border-radius:10px;background:#fff1f0;color:#8b1d18';
+      panel.focus(); panel.scrollIntoView({block: 'center', behavior: 'smooth'});
     };
     xhr.upload.onprogress = event => {
       if (event.lengthComputable) {
         const percent = Math.round(event.loaded / event.total * 100);
         bar.hidden = false; bar.value = percent;
         status.textContent = `Uploading: ${percent}%`;
-      } else { bar.removeAttribute('value'); status.textContent = 'Uploading…'; }
+      } else { bar.hidden = true; status.textContent = 'Uploading…'; }
     };
     xhr.upload.onload = () => {
-      bar.removeAttribute('value'); button.textContent = 'Saving story…';
+      bar.hidden = false; bar.value = 100; button.textContent = 'Saving story…';
       status.textContent = 'Upload complete (100%). Saving and checking your story…';
     };
     xhr.onload = () => {
@@ -40,7 +45,7 @@
       }
       if (xhr.status === 400) {
         const doc = new DOMParser().parseFromString(xhr.responseText, 'text/html');
-        const errors = Array.from(doc.querySelectorAll('.errorlist li')).map(node => {
+        const errors = Array.from(doc.querySelectorAll('.errorlist li, .nd-empty p')).map(node => {
           const label = node.closest('.nd-field')?.querySelector('label')?.textContent || '';
           return `${label} ${node.textContent}`.trim();
         });

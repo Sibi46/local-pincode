@@ -9,4 +9,4 @@
 {% if cards %}<h2>Your recent birthday cards</h2><div class="nd-card-links">{% for card in cards %}<a href="{% url 'newsdesk:card' card.pk %}">🎂 {{ card.recipient }} · {{ card.created_at|date:'d M' }}</a>{% endfor %}</div>{% endif %}
 </section>{% endblock %}
 
-{% block extra_js %}{{ block.super }}<script src="{% static 'newsdesk/upload-progress.js' %}?v=2" defer></script>{% endblock %}
+{% block extra_js %}{{ block.super }}<script src="{% static 'newsdesk/upload-progress.js' %}?v=3" defer></script>{% endblock %}
