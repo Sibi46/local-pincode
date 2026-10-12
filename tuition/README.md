@@ -87,6 +87,18 @@ Migrations were applied forward only in isolated SQLite tests. No reverse migrat
 Final verification on 2026-10-04: **145/145 tests passed**, Django checks reported 0 issues, migration drift reported no changes, and integration diff whitespace checks passed. This is isolated SQLite evidence, not production/MySQL/video-codec validation. Checklist items 12, 15, 16 and 22 remain explicitly verification-gated.
 
 
+### Group leave / absence dates
+
+Group creation now accepts multiple start times for each selected weekday, rather than calendar-date or shared-time inputs. New groups inherit the teacher's age range and schedule weekly from the next occurrence for 365 days (disclosed on the form); existing groups are unchanged. Each new slot reserves 60 minutes for calendar availability and clash checks. In-person groups require an address, online groups require an approved meeting URL, and hybrid groups require both. Standard 90-day generation and the existing scheduler still apply. No schema migration is required.
+
+Teachers now start with **Create group** from My Learning or their teacher dashboard. One transaction creates the internal lesson, batch, typed/selected subjects and recurring rules (India timezone), and generates the existing scheduling horizon. Existing groups/data remain intact; no schema migration or fixed group-count limit is introduced. Teacher approval and ownership are required. Scheduling conflicts roll back the whole group.
+
+**Add students** requires a name, an active registered student/parent phone number, and a subject taught in the group. It creates a private teacher-managed learner and group enrolment atomically, storing the contact number and selected subject. Registration lookup does not link the account or create guardian authority. Names never match existing accounts; guardian authority is not granted. Unknown age and PIN remain unset. Teacher ownership, active group and lesson capacity checks apply; fees and payments remain separate.
+
+Teachers open a batch and select **Record leave / absence dates**, then choose an active enrolled student, inclusive dates, status and reason. Approved owners only can submit. `excused` means leave (including future scheduled classes); `absent` requires the class to have started. Existing attendance cannot be overwritten through the date-range form; corrections use the individual class attendance form. Membership and enrolment end dates are unchanged.
+
+This reuses Attendance and SessionParticipant, including audit and points handling; no migration is needed. Only already-generated scheduled classes are covered, not future timetable additions. Create the timetable before recording leave. An invalid range is rolled back as a whole. This is teacher-recorded leave, not a parent leave-request approval workflow.
+
 ### Phase 4 changed-file inventory
 
 - Added: `tuition/activities.py`, `activity_forms.py`, `activity_views.py`, `activity_storage.py`, `messaging.py`, `moderation.py`, `test_activities.py`; migrations `0004_achievement_announcement_assignment_and_more.py`, `0005_media_consent.py`, `0006_integrations.py`.
@@ -95,3 +107,41 @@ Final verification on 2026-10-04: **145/145 tests passed**, Django checks report
 - Integration: `jobportal/settings.py`, `jobportal/middleware.py`, `jobs/admin.py`, `jobs/assigned_admin.py`, `jobs/views.py`, `jobs/test_assigned_admin.py`.
 - Documentation: `TUITION_MODULE_DESIGN.md`, `TUITION_MODULE_CHECKLIST.md`, `tuition/README.md`, `tuition/PHASE4_HANDOFF.md`.
 - Earlier Phase 3 app registration/root URL/home Explore and core migrations remain in the uncommitted workspace. Pre-existing unrelated `.env.example`, `portal/network_forms.py` and preview artifacts were left untouched. No Git push or deployment performed.
+
+Create Group allows multiple start-time-only slots per weekday (+/remove controls). Each reserves 60 minutes for calendar/clash checks; repeated or conflicting times are rejected. Advertised fee is optional and blank saves zero; fee agreements remain separate. No migration required.
+
+Timetable defaults to group cards with weekday/start-time slots from active, unexpired rules. Access is limited to the group's teacher or an authorized learner's active enrolment/membership. The existing monthly calendar remains available via View calendar (?month=YYYY-MM).
+
+
+### Profile and academy management
+Teacher/academy registration accepts moderated profile and banner images through existing private media storage. Public profiles include active weekly class-day counts, approved teacher videos, and opted-in academy staff (phone numbers remain owner-only). Staff are managed by the academy owner, not separate login accounts. Changing a staff profile to private also removes publication permission on its photo.
+
+Subject inputs support +/remove; selected weekdays show five optional start-time inputs (at least one is required server-side; up to 24). Student guardian failures are field-specific, with adult self-registration hiding guardian-only inputs; verified access is still required.
+
+Delete requires an owner-authorized confirmation POST. Groups with related sessions, membership, rules or history cannot be deleted. Teacher profiles with business/history records cannot be deleted; only unused configuration (service areas, availability, points/levels) is cleared with an otherwise unused profile. Staff deletion keeps uploaded media records intact. Existing group edit and private media/video validation services are reused.
+
+Migration 0007 adds nullable image references and the academy staff table/M2M only. It must be applied before running this version; no data migration, new dependency, storage change or production action was performed. Take the normal verified backup before deployment. Video uploads continue to require ffprobe and existing moderation/consent checks.
+
+Academy registration now requires opening weekdays and opening/closing times, saved as existing Availability rows. Existing hours are edited through Teaching hours, so profile edits do not overwrite them. Branches are independently reviewed academy profiles owned by the same account, linked through nullable parent_academy (migration 0008). Public branch lists only show approved profiles.
+
+Student deletion requires a confirmation POST by the student account or the original creator with a pending/verified guardian request. Other guardians or any linked education/media records prevent deletion. Only an unused student's authorization metadata is removed alongside the profile. Apply to learn keeps its authorized-only selector and explains empty/pending states, with Add student and request-status links.
+
+
+### Permanent teacher-profile deletion
+The teacher Delete profile page now previews scoped counts and requires exact profile name, the owner's current account password, and explicit acknowledgement. The dedicated transaction deletes that profile's Tuition records (including enrolments, financial records, activity history and media); student accounts, guardian links, other profiles and branch profiles remain. Branches become standalone profiles. Shared messaging/complaint records, inbox notifications and audit history remain. Payment-record deletion does not refund external payments. Group/student/staff deletion retains its existing unused-record protections.
+
+Migration 0009 adds a durable private-file cleanup queue. Files are removed only after the database transaction commits. Failed cleanup remains queued, logs a task ID, and is retried by tuition_schedule; verify that scheduler is running before relying on automatic retries. Cross-profile media references and unexpected protected relationships abort the entire transaction. A deletion audit record remains. No production data was deleted during implementation.
+
+Media uploads label Subjects as students visible in the media (not teaching subjects), explain an empty enrolment list, and convert storage/OS configuration failures into a form error while logging the traceback. Production upload failures still require server-log evidence to identify and correct the underlying configuration.
+
+Teacher gallery uploads now default to public opt-in and auto-approve media after the owner confirms all recognizable students are identified (including a no-students declaration). Approved teacher status, active account, private-file delivery, video validation and guardian/student publication consent checks remain in effect. Existing pending teacher assets can be published by their owner through Manage uploads; admin-rejected assets cannot be republished this way. Previously identified students cannot be removed to bypass consent. Changing the student list increments the media revision and requires renewed consent. Event/achievement/submission moderation is unchanged.
+
+The supplied production traceback identified upload PermissionError creating /var/www/ourpincode-data. The operator reported uploads succeeded after creating the service-owned private directory; this does not verify unrelated production release gates.
+
+Registration now uses typed subjects only and preserves the existing public-fee preference without displaying that control. Owners can publish brand/profile/banner images after confirming no recognizable students; existing student-linked or rejected media cannot use this shortcut. Photo-only changes retain teacher approval, while teaching-detail changes still return to review. Group pages show first weekday/time/date without the recurrence end date or repeated session/enrolment lists; recurrence data is unchanged. Apply to learn accepts typed student-name/contact enquiries without a learner selector or Add student link; identity linking remains a later authorized step.
+
+Application age under 18 requires a parent/guardian name and validated phone; that phone is used as the application contact. Adult applicants provide their own contact phone. This does not create or verify guardian authorization. Migration 0010 adds blank-compatible parent contact fields for existing records.
+
+The Tuition notifications page paginates all of the current user's Tuition-linked notifications and reuses the existing ownership-checked mark-read endpoint. Public group times are grouped by group/weekday, comma-separated. Edit profile can assign previously uploaded, teacher-owned images as the logo/banner; existing publication/consent rules remain.
+
+Teacher application details are read-only: no response/accept/reject controls, and teacher POST requests to application details return 405. Submitted contact details remain private to the profile owner and applicant. Existing authorized group enrolment workflows are unchanged.

@@ -1,0 +1,24 @@
+{% extends 'base.html' %}{% load static %}
+{% block title %}Student profile · OUR PINCODE{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'tuition/learning.css' %}"><link rel="stylesheet" href="{% static 'tuition/register.css' %}"><link rel="stylesheet" href="{% static 'tuition/simple-forms.css' %}?v=profile-management-1">{% endblock %}
+{% block content %}
+<main class="learning teacher-register">
+  <nav aria-label="Learning navigation">{% if request.user.is_authenticated %}<a class="button" href="{% url 'tuition:notifications' %}">Tuition notifications</a>{% endif %}<a href="{% url 'tuition:dashboard' %}">&larr; My learning</a><a href="{% url 'tuition:discover' %}">Find a teacher</a></nav>
+  <header><p class="eyebrow">A NEW CHAPTER STARTS HERE</p><h1>{% if form.instance.pk %}Update student profile{% else %}Add student{% endif %}</h1><p>Add yourself or a child to start exploring lessons, classes and new skills.</p></header>
+  <div class="student-form-layout">
+
+    <form method="post" class="registration-form" id="student-form" data-today="{% now 'Y-m-d' %}">{% csrf_token %}
+      {% if form.errors %}<div class="form-alert" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+      {% for title, fields in form.sections %}<fieldset><legend><span>{{ forloop.counter }}</span>{{ title }}</legend><div class="registration-fields">
+        {% for field in fields %}<div data-student-field="{{ field.name }}" class="registration-field{% if field.name == 'address' or field.name == 'attestation' or field.name == 'self_registration' or field.name == 'interests' %} full-width{% endif %}">
+          {% if field.field.widget.input_type == 'checkbox' %}<label for="{{ field.id_for_label }}">{{ field }} {{ field.label }}</label>{% else %}<label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} <span aria-hidden="true">*</span>{% else %} <small>(optional)</small>{% endif %}</label>{{ field }}{% endif %}
+          {% if field.help_text %}<p class="field-help">{{ field.help_text }}</p>{% endif %}{{ field.errors }}
+        </div>{% endfor %}
+      </div></fieldset>{% endfor %}
+      <footer><a href="{% url 'tuition:dashboard' %}">Cancel</a><button type="submit">{% if form.instance.pk %}Save changes{% else %}Add student{% endif %} &rarr;</button></footer>
+    </form>
+  </div>
+</main>
+{% endblock %}
+
+{% block extra_js %}<script src="{% static 'tuition/student-form.js' %}?v=guardian-age-3" defer></script>{% endblock %}

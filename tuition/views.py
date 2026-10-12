@@ -9,7 +9,7 @@ from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.paginator import Paginator
 from django.db import transaction
 from django.db.models import Q, Count, F
-from django.http import FileResponse, HttpResponseRedirect
+from django.http import FileResponse, HttpResponseRedirect, HttpResponseNotAllowed
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -102,29 +102,82 @@ def discover(request):
             teachers = teachers.distinct().order_by('name', 'pk')
     else:
         teachers = teachers.none()
-    return page(request, 'Find a teacher', template='tuition/discover.html', search=form, teachers=Paginator(teachers, 20).get_page(request.GET.get('page')))
+    from .activities import public_allowed
+    results = Paginator(teachers, 20).get_page(request.GET.get('page'))
+    for teacher in results:
+        for field in ('profile_image', 'banner_image'):
+            asset = getattr(teacher, field)
+            visible = asset and asset.teacher_id == teacher.pk and asset.mime.startswith('image/') and public_allowed(asset)
+            setattr(teacher, 'public_' + field, asset if visible else None)
+    return page(request, 'Find a teacher', template='tuition/discover.html', search=form, teachers=results)
 
 
 def public_profile(request, slug):
     teacher = get_object_or_404(m.TeacherProfile, slug=slug, status='approved', owner__is_active=True)
     from .activities import public_allowed
-    return page(request, teacher.name, public_teacher=teacher, lessons=teacher.lessons.filter(active=True), availability=teacher.availability.all(), public_images=[asset for asset in m.MediaAsset.objects.filter(teacher=teacher, mime__startswith='image/') if public_allowed(asset)])
+    assets = [asset for asset in m.MediaAsset.objects.filter(teacher=teacher) if public_allowed(asset)]
+    public_ids = {asset.pk for asset in assets}
+    lessons = list(teacher.lessons.filter(active=True).prefetch_related('subjects', 'batches__rules'))
+    for lesson in lessons:
+        slots = [rule for batch in lesson.batches.all() if batch.status == 'active' for rule in batch.rules.all() if rule.active and rule.end_date >= timezone.localdate()]
+        lesson.class_days = len({rule.weekday for rule in slots})
+        lesson.public_slots = sorted(slots, key=lambda rule: (rule.batch_id, rule.weekday, rule.start_time))
+    staff = list(teacher.staff.filter(public=True).prefetch_related('subjects')) if teacher.kind == 'academy' else []
+    for person in staff:
+        person.visible_photo = person.photo_id in public_ids
+    return page(request, teacher.name, template='tuition/profile.html', public_teacher=teacher, lessons=lessons,
+        availability=teacher.availability.all(), public_images=[asset for asset in assets if asset.mime.startswith('image/')],
+        public_videos=[asset for asset in assets if asset.mime.startswith('video/')],
+        profile_photo=teacher.profile_image if teacher.profile_image_id in public_ids else None,
+        banner_photo=teacher.banner_image if teacher.banner_image_id in public_ids else None, academy_staff=staff, branches=teacher.branches.filter(status='approved', owner__is_active=True))
+
 
 
 @login_required
-def register_teacher(request, uid=None):
+def register_teacher(request, uid=None, academy_id=None):
     perm.active(request.user)
     teacher = teacher_for(request, uid) if uid else m.TeacherProfile(owner=request.user)
+    academy = teacher_for(request, academy_id) if academy_id else None
+    if academy:
+        if academy.kind != 'academy':
+            raise PermissionDenied
+        teacher.parent_academy = academy
+        teacher.kind = 'academy'
     initial = {'service_pins': ', '.join(teacher.service_areas.values_list('pincode', flat=True))} if teacher.pk else {}
-    form = f.TeacherForm(request.POST or None, instance=teacher, initial=initial)
+    form = f.TeacherForm(request.POST or None, request.FILES or None, instance=teacher, initial=initial)
+    if academy or teacher.parent_academy_id:
+        form.fields['kind'].disabled = True
+        form.initial['kind'] = 'academy'
+        form.fields['name'].label = 'Branch name'
     def save(form):
+        is_new = not form.instance.pk
         obj = form.save(commit=False)
         obj.owner = request.user
-        obj.status = 'pending'
+        photo_only = set(form.changed_data).issubset({'profile_photo', 'banner_photo', 'publish_brand_images', 'existing_profile_image', 'existing_banner_image'})
+        if is_new or not photo_only:
+            obj.status = 'pending'
         from jobs.models import PinCode
         obj.mapped_pin = PinCode.objects.filter(code=obj.pincode, is_active=True, district__is_active=True, district__state__is_active=True).first()
         obj.save()
         form.save_m2m()
+        if is_new and obj.kind == 'academy':
+            for day in form.cleaned_data['opening_days']:
+                m.Availability.objects.create(teacher=obj, weekday=int(day), start=form.cleaned_data['opening_time'], end=form.cleaned_data['closing_time'])
+        for source, target in [('existing_profile_image', 'profile_image'), ('existing_banner_image', 'banner_image')]:
+            if form.cleaned_data.get(source):
+                setattr(obj, target, form.cleaned_data[source])
+        for source, target in [('profile_photo', 'profile_image'), ('banner_photo', 'banner_image')]:
+            if form.cleaned_data.get(source):
+                asset = upload_image(request.user, form.cleaned_data[source], teacher=obj)
+                setattr(obj, target, asset)
+        if form.cleaned_data.get('publish_brand_images'):
+            for asset in (obj.profile_image, obj.banner_image):
+                if asset:
+                    asset.public_requested = True
+                    asset.subjects_complete = True
+                    asset.moderation = 'approved'
+                    asset.save(update_fields=['public_requested', 'subjects_complete', 'moderation'])
+        obj.save(update_fields=['profile_image', 'banner_image'])
         from .activities import defaults
         defaults(obj)
         wanted = form.cleaned_data['service_pins']
@@ -139,7 +192,8 @@ def register_teacher(request, uid=None):
 @login_required
 def dashboard(request):
     perm.active(request.user)
-    return page(request, 'Your learning space', owned=m.TeacherProfile.objects.filter(owner=request.user), learners=perm.learners(request.user), claimable=m.Application.objects.filter(uid__in=request.session.get('tuition_receipts', []), applicant__isnull=True),
+    owned = m.TeacherProfile.objects.filter(owner=request.user).exclude(status='suspended').prefetch_related('lessons__batches')
+    return page(request, 'Your learning space', template='tuition/learn.html', owned=owned, timetable_profiles=owned, learners=perm.learners(request.user), claimable=m.Application.objects.filter(uid__in=request.session.get('tuition_receipts', []), applicant__isnull=True),
         guardian_requests=m.GuardianLink.objects.filter(user=request.user), applications=m.Application.objects.filter(applicant=request.user),
         notifications=request.user.notifications.filter(link__startswith='/tuition/').order_by('-created_at')[:30])
 
@@ -149,13 +203,57 @@ def teacher_dashboard(request, uid):
     teacher = teacher_for(request, uid)
     enrolments = m.Enrolment.objects.filter(lesson__teacher=teacher).select_related('learner', 'lesson')
     invoices = m.Invoice.objects.filter(agreement__enrolment__lesson__teacher=teacher, state='open')
-    return page(request, teacher.name, teacher=teacher, lessons=teacher.lessons.all(), enrolments=enrolments,
+    return page(request, teacher.name, teacher=teacher, timetable_profiles=[teacher], lessons=teacher.lessons.all(), enrolments=enrolments,
         student_total=enrolments.filter(status='active').values('learner_id').distinct().count(),
         active_batches=m.Batch.objects.filter(lesson__teacher=teacher, status='active').count(),
         upcoming_events=teacher.events.filter(start__gte=timezone.now()).exclude(status='cancelled').order_by('start')[:10],
         today_classes=m.ClassSession.objects.filter(batch__lesson__teacher=teacher, start__date=timezone.localdate(), status='scheduled').count(),
         pending_fees=sum(i.balance for i in invoices), applications=teacher.applications.select_related('lesson', 'learner'),
         sessions=m.ClassSession.objects.filter(batch__lesson__teacher=teacher, end__gte=timezone.now()).order_by('start')[:100])
+
+
+@login_required
+def group_create(request, uid):
+    teacher = teacher_for(request, uid)
+    if teacher.status != 'approved':
+        raise PermissionDenied('Teacher approval is required to create groups.')
+    today = timezone.localdate()
+    form = f.GroupCreateForm(request.POST or None, instance=m.Lesson(teacher=teacher, start_date=today,
+        end_date=today + timedelta(days=365), min_age=teacher.min_age, max_age=teacher.max_age),
+        initial={'mode': teacher.mode, 'location': teacher.address})
+    def save(form):
+        teacher = svc.lock_teacher(request.user, form.instance.teacher)
+        if teacher.status != 'approved':
+            raise PermissionDenied
+        form.instance.duration_minutes = form.cleaned_data['slots'][0][2]
+        lesson = form.save()
+        batch = m.Batch.objects.create(lesson=lesson, name=lesson.name, capacity=lesson.capacity,
+            mode=lesson.mode, location=lesson.location)
+        for day, start_time, duration in form.cleaned_data['slots']:
+            first_day = today + timedelta(days=(day - today.weekday()) % 7)
+            if first_day == today and start_time <= timezone.localtime().time().replace(tzinfo=None):
+                first_day += timedelta(days=7)
+            rule = m.ScheduleRule(batch=batch, weekday=day, start_time=start_time,
+                duration_minutes=duration, start_date=first_day, end_date=lesson.end_date,
+                timezone_name='Asia/Kolkata', meeting_url=form.cleaned_data['meeting_url'])
+            rule.full_clean(); rule.save()
+            svc.generate(rule)
+        svc.audit(request.user, batch, 'group_created')
+        return reverse('tuition:batch', args=[batch.uid])
+    return form_page(request, 'Create group', form, save, template='tuition/group_form.html')
+
+
+@login_required
+def group_students(request, uid):
+    batch = get_object_or_404(m.Batch, uid=uid)
+    perm.own(request.user, batch.lesson.teacher)
+    if batch.lesson.teacher.status != 'approved':
+        raise PermissionDenied
+    form = f.GroupMemberForm(request.POST or None, batch=batch)
+    def save(form):
+        svc.add_named_student(request.user, batch, form.cleaned_data['name'], form.cleaned_data['phone'], form.cleaned_data['subject'])
+        return reverse('tuition:batch', args=[batch.uid])
+    return form_page(request, batch.name + ' — Add students', form, save)
 
 
 @login_required
@@ -189,9 +287,12 @@ def lesson_detail(request, uid):
 
 @login_required
 def batch_edit(request, lesson_id=None, uid=None):
+    if uid:
+        return group_edit(request, uid)
     obj = get_object_or_404(m.Batch, uid=uid) if uid else m.Batch(lesson=get_object_or_404(m.Lesson, uid=lesson_id))
     perm.own(request.user, obj.lesson.teacher)
     form = f.BatchForm(request.POST or None, instance=obj)
+    form.editing_group = bool(obj.pk)
     def save(form):
         svc.lock_teacher(request.user, obj.lesson.teacher)
         batch = form.save(commit=False)
@@ -211,7 +312,7 @@ def batch_edit(request, lesson_id=None, uid=None):
                 svc.notify(f'class:{session.pk}:{session.revision}', 'Class cancelled', ids)
         svc.audit(request.user, batch, 'batch_saved')
         return reverse('tuition:batch', args=[batch.uid])
-    return form_page(request, 'Batch details', form, save)
+    return form_page(request, 'Edit group' if obj.pk else 'Create group', form, save, template='tuition/group_form.html')
 
 
 @login_required
@@ -219,6 +320,17 @@ def batch_detail(request, uid):
     batch = get_object_or_404(m.Batch, uid=uid)
     perm.own(request.user, batch.lesson.teacher)
     return page(request, batch.name, batch=batch, rules=batch.rules.all(), sessions=batch.sessions.order_by('start')[:100], enrolments=m.Enrolment.objects.filter(membership__batch=batch))
+
+
+@login_required
+def group_leave(request, uid):
+    batch = get_object_or_404(m.Batch, uid=uid)
+    perm.own(request.user, batch.lesson.teacher)
+    form = f.GroupLeaveForm(request.POST or None, batch=batch)
+    def save(form):
+        svc.record_group_leave(request.user, batch, **form.cleaned_data)
+        return reverse('tuition:batch', args=[batch.uid])
+    return form_page(request, batch.name + ' — Student leave / absence', form, save)
 
 
 @login_required
@@ -255,7 +367,7 @@ def learner_create(request, uid=None):
             m.GuardianLink.objects.create(learner=obj, user=request.user, relationship=form.cleaned_data['relationship'], attestation=form.cleaned_data['attestation'])
         svc.audit(request.user, obj, 'learner_created')
         return 'tuition:dashboard'
-    return form_page(request, 'Add yourself or a child', form, save)
+    return form_page(request, 'Add yourself or a child', form, save, template='tuition/learner_form.html')
 
 
 @login_required
@@ -268,9 +380,12 @@ def apply(request, uid):
     lesson = get_object_or_404(m.Lesson, uid=uid, active=True, teacher__status='approved', teacher__owner__is_active=True)
     obj = m.Application(teacher=lesson.teacher, lesson=lesson)
     form = f.ApplicationForm(request.POST or None, instance=obj)
+    form.fields.pop('learner')
+    form.fields['name'].label = 'Student name'
+    if form.is_bound and request.POST.get('learner'):
+        form.add_error(None, 'Student profile linking is not accepted on this form.')
     if request.user.is_authenticated:
         perm.active(request.user)
-        form.fields['learner'].queryset = perm.learners(request.user)
     def save(form):
         # An IP bucket is only abuse control, never an identity/authorization check.
         key = 'tuition-apply:' + hashlib.sha256(request.META.get('REMOTE_ADDR', '').encode()).hexdigest()
@@ -285,7 +400,7 @@ def apply(request, uid):
             request.session['tuition_receipts'] = (request.session.get('tuition_receipts', []) + [str(app.uid)])[-10:]
         svc.notify(f'application:{app.pk}:new', 'New learning enquiry', [lesson.teacher.owner_id], teacher_url(lesson.teacher))
         return 'tuition:received'
-    return form_page(request, f'Apply to learn: {lesson.name}', form, save)
+    return form_page(request, f'Apply to learn: {lesson.name}', form, save, template='tuition/apply.html')
 
 
 def received(request):
@@ -326,6 +441,9 @@ def application_detail(request, uid):
     is_teacher = app.teacher.owner_id == request.user.pk
     if is_teacher:
         perm.own(request.user, app.teacher)
+        if request.method != 'GET':
+            return HttpResponseNotAllowed(['GET'])
+        return page(request, 'Learning application', application=app, notice='Application submitted. Contact the applicant using the details below.')
     elif app.applicant_id != request.user.pk:
         raise PermissionDenied
     class ResponseForm(forms.Form):
@@ -465,12 +583,26 @@ def attendance(request, pk):
 @login_required
 def timetable(request):
     perm.active(request.user)
+    from .calendar_ui import month_start, bounds, build_month
+    first = month_start(request.GET.get('month'))
     sessions = m.ClassSession.objects.filter(Q(batch__lesson__teacher__owner=request.user) | Q(participants__enrolment__learner__in=perm.learners(request.user), participants__eligible=True)).distinct()
     if request.GET.get('today'):
         sessions = sessions.filter(start__date=timezone.localdate())
-    else:
-        sessions = sessions.filter(end__gte=timezone.now())
-    return page(request, 'Timetable', sessions=sessions.order_by('start')[:200])
+        return page(request, 'Timetable', sessions=sessions.order_by('start')[:200])
+    if 'month' not in request.GET:
+        from django.db.models import Prefetch
+        batches = m.Batch.objects.filter(
+            Q(lesson__teacher__owner=request.user) |
+            Q(memberships__enrolment__status='active', memberships__enrolment__learner__in=perm.learners(request.user))
+        ).distinct().select_related('lesson__teacher').prefetch_related(Prefetch(
+            'rules', queryset=m.ScheduleRule.objects.filter(active=True, end_date__gte=timezone.localdate()).order_by('weekday', 'start_time'), to_attr='weekly_slots'
+        )).order_by('name')
+        return page(request, 'Group timetable', template='tuition/group_timetable.html', groups=batches)
+    start, end = bounds(first)
+    sessions = list(sessions.filter(start__lt=end, end__gt=start).select_related('batch__lesson__teacher').order_by('start'))
+    profiles = m.TeacherProfile.objects.filter(owner=request.user)
+    hours = list(m.Availability.objects.filter(teacher__in=profiles))
+    return page(request, 'Timetable', template='tuition/calendar.html', calendar=build_month(first, sessions, hours), teacher_profiles=profiles, has_hours=bool(hours))
 
 
 @login_required
@@ -710,4 +842,145 @@ def notification_read(request, pk):
     notification = get_object_or_404(UserNotification, pk=pk, user=request.user, link__startswith='/tuition/')
     notification.is_read = True
     notification.save(update_fields=['is_read'])
-    return redirect('tuition:dashboard')
+    return redirect('tuition:notifications')
+
+
+@login_required
+def academy_staff(request, uid):
+    teacher = teacher_for(request, uid)
+    if teacher.kind != 'academy':
+        raise PermissionDenied
+    return page(request, 'Academy teachers', template='tuition/staff.html', academy=teacher, staff=teacher.staff.all().prefetch_related('subjects'))
+
+
+@login_required
+def staff_edit(request, teacher_id=None, uid=None):
+    obj = get_object_or_404(m.AcademyStaff, uid=uid) if uid else m.AcademyStaff(academy=teacher_for(request, teacher_id))
+    perm.own(request.user, obj.academy)
+    if obj.academy.kind != 'academy':
+        raise PermissionDenied
+    form = f.AcademyStaffForm(request.POST or None, request.FILES or None, instance=obj)
+    def save(form):
+        svc.lock_teacher(request.user, obj.academy)
+        person = form.save()
+        if form.cleaned_data.get('profile_photo'):
+            person.photo = upload_image(request.user, form.cleaned_data['profile_photo'], teacher=obj.academy)
+            person.save(update_fields=['photo'])
+        if person.photo_id:
+            person.photo.public_requested = person.public
+            person.photo.save(update_fields=['public_requested'])
+        svc.audit(request.user, person, 'staff_saved')
+        return reverse('tuition:academy_staff', args=[obj.academy.uid])
+    return form_page(request, 'Academy teacher', form, save, template='tuition/staff_form.html')
+
+
+@login_required
+def delete_unused(request, kind, uid):
+    models = {'teacher': m.TeacherProfile, 'group': m.Batch, 'staff': m.AcademyStaff}
+    if kind not in models:
+        raise PermissionDenied
+    if kind == 'teacher':
+        return teacher_delete(request, uid)
+    obj = get_object_or_404(models[kind], uid=uid)
+    teacher = obj if kind == 'teacher' else obj.lesson.teacher if kind == 'group' else obj.academy
+    perm.own(request.user, teacher)
+    class Confirmation(forms.Form):
+        confirm = forms.BooleanField(label='Permanently delete this unused record')
+    form = Confirmation(request.POST or None)
+    def save(form):
+        from django.db.models.deletion import ProtectedError
+        svc.lock_teacher(request.user, teacher)
+        # Configuration is removed only after every business/history relation is empty.
+        config = {'service_areas', 'availability', 'point_rules', 'levels'} if kind == 'teacher' else set()
+        for relation in obj._meta.related_objects:
+            if relation.one_to_many and relation.get_accessor_name() not in config:
+                if getattr(obj, relation.get_accessor_name()).exists():
+                    raise ValidationError('Cannot delete: linked records exist. Keep this record and use Edit to manage it.')
+        try:
+            with transaction.atomic():
+                if kind == 'teacher':
+                    obj.point_rules.all().delete()
+                    obj.levels.all().delete()
+                svc.audit(request.user, obj, 'unused_record_deleted')
+                obj.delete()
+        except ProtectedError:
+            raise ValidationError('Cannot delete: linked records exist.')
+        return reverse('tuition:dashboard')
+    return form_page(request, 'Delete ' + str(getattr(obj, 'name', kind)), form, save)
+
+
+@login_required
+def student_delete(request, uid):
+    perm.active(request.user)
+    allowed = m.Learner.objects.filter(Q(user=request.user) | Q(user__isnull=True, created_by=request.user, guardians__user=request.user, guardians__status__in=['pending', 'verified'])).distinct()
+    student = get_object_or_404(allowed, uid=uid)
+    class Confirmation(forms.Form):
+        confirm = forms.BooleanField(label='Permanently delete this unused student profile')
+    form = Confirmation(request.POST or None)
+    def save(form):
+        from django.db.models.deletion import ProtectedError
+        obj = allowed.select_for_update().get(pk=student.pk)
+        if obj.guardians.exclude(user=request.user).exists():
+            raise ValidationError('Cannot delete: another guardian is linked to this student.')
+        for relation in obj._meta.related_objects:
+            if relation.one_to_many and relation.get_accessor_name() != 'guardians' and getattr(obj, relation.get_accessor_name()).exists():
+                raise ValidationError('Cannot delete: linked student records exist.')
+        try:
+            with transaction.atomic():
+                obj.guardians.all().delete()
+                svc.audit(request.user, obj, 'unused_student_deleted')
+                obj.delete()
+        except ProtectedError:
+            raise ValidationError('Cannot delete: linked student records exist.')
+        return reverse('tuition:dashboard')
+    return form_page(request, 'Delete student: ' + student.name, form, save)
+
+
+@login_required
+def teacher_delete(request, uid):
+    from .deletion import deletion_plan, delete_teacher
+    teacher = teacher_for(request, uid)
+    class Confirmation(forms.Form):
+        profile_name = forms.CharField(label='Type the exact profile name')
+        password = forms.CharField(label='Your account password', widget=forms.PasswordInput)
+        confirm = forms.BooleanField(label='I understand this permanently deletes this profile and its listed records')
+    form = Confirmation(request.POST or None)
+    if request.method == 'POST' and form.is_valid():
+        try:
+            delete_teacher(request.user, teacher, form.cleaned_data['profile_name'], form.cleaned_data['password'], form.cleaned_data['confirm'])
+        except ValidationError as error:
+            form.add_error(None, error)
+        else:
+            messages.success(request, 'Teacher profile deleted. Uploaded file cleanup is processed automatically.')
+            return redirect('tuition:dashboard')
+    counts = [(label, records.count()) for label, records in deletion_plan(teacher)]
+    return page(request, 'Permanently delete teacher profile', template='tuition/teacher_delete.html', form=form, deleting_teacher=teacher, deletion_counts=counts)
+
+
+@login_required
+def tuition_notifications(request):
+    perm.active(request.user)
+    items = request.user.notifications.filter(link__startswith='/tuition/').order_by('-created_at', '-pk')
+    return page(request, 'Tuition notifications', template='tuition/notifications.html', notification_page=Paginator(items, 30).get_page(request.GET.get('page')), unread_count=items.filter(is_read=False).count())
+
+
+@login_required
+def group_edit(request, uid):
+    batch = get_object_or_404(m.Batch.objects.select_related('lesson__teacher'), uid=uid)
+    perm.own(request.user, batch.lesson.teacher)
+    if batch.lesson.teacher.status != 'approved':
+        raise PermissionDenied
+    rules = list(batch.rules.filter(active=True).order_by('weekday', 'start_time'))
+    initial = {'name': batch.name, 'capacity': batch.capacity, 'mode': batch.mode,
+        'location': batch.location, 'new_subjects': ','.join(batch.lesson.subjects.values_list('name', flat=True)),
+        'weekdays': list({str(rule.weekday) for rule in rules}),
+        'meeting_url': rules[0].meeting_url if rules else ''}
+    for day, label in m.DAYS:
+        initial['day_start_' + str(day)] = ','.join(rule.start_time.strftime('%H:%M') for rule in rules if rule.weekday == day)
+    form = f.GroupCreateForm(request.POST or None, instance=batch.lesson, initial=initial)
+    form.editing_group = True
+    form.fields['status'] = forms.ChoiceField(choices=m.Batch._meta.get_field('status').choices, initial=batch.status)
+    def save(form):
+        svc.edit_group(request.user, batch, form)
+        return reverse('tuition:batch', args=[batch.uid])
+    return form_page(request, 'Edit group', form, save, template='tuition/group_form.html')

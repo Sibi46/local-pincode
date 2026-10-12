@@ -53,6 +53,17 @@ class Subject(models.Model):
 
 
 class TeacherProfile(Record):
+    CATEGORY_CHOICES = [
+        ('academic', 'Academic tuition'), ('sports', 'Sports'),
+        ('fitness', 'Gym & Fitness'), ('cooking', 'Food & Cooking'),
+        ('skills', 'Skills & Vocational Training'), ('music', 'Music'),
+        ('dance', 'Dance'), ('arts', 'Arts & Crafts'),
+        ('languages', 'Languages'), ('technology', 'Computers & Technology'),
+        ('other', 'Other'),
+    ]
+    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, blank=True)
+    categories = models.JSONField(default=list, blank=True)
+    category_subjects = models.JSONField(default=dict, blank=True)
     owner = models.ForeignKey(USER, on_delete=models.PROTECT, related_name='tuition_profiles')
     kind = models.CharField(max_length=12, choices=[('teacher', 'Teacher'), ('academy', 'Academy')])
     name = models.CharField(max_length=180)
@@ -76,7 +87,14 @@ class TeacherProfile(Record):
     public_fees = models.BooleanField(default=False)
     status = models.CharField(max_length=12, default='pending', choices=[(x, x.title()) for x in ['pending', 'approved', 'rejected', 'suspended']], db_index=True)
 
+    parent_academy = models.ForeignKey('self', null=True, blank=True, on_delete=models.PROTECT, related_name='branches')
+    profile_image = models.ForeignKey('MediaAsset', null=True, blank=True, on_delete=models.SET_NULL, related_name='+')
+    banner_image = models.ForeignKey('MediaAsset', null=True, blank=True, on_delete=models.SET_NULL, related_name='+')
+
     def clean(self):
+        if self.parent_academy_id:
+            if self.parent_academy_id == self.pk or self.kind != 'academy' or self.parent_academy.kind != 'academy' or self.parent_academy.owner_id != self.owner_id:
+                raise ValidationError('Branches must belong to an academy owned by the same account.')
         if self.min_age > self.max_age:
             raise ValidationError('Minimum age must not exceed maximum age.')
         if (self.latitude is None) != (self.longitude is None):
@@ -87,6 +105,21 @@ class TeacherProfile(Record):
 
     def __str__(self):
         return self.name
+
+
+class AcademyStaff(Record):
+    academy = models.ForeignKey(TeacherProfile, on_delete=models.PROTECT, related_name='staff')
+    name = models.CharField(max_length=150)
+    phone = models.CharField(max_length=20, validators=[RegexValidator(r'^\+?[0-9]{10,15}$')])
+    subjects = models.ManyToManyField(Subject, blank=True)
+    photo = models.ForeignKey('MediaAsset', null=True, blank=True, on_delete=models.SET_NULL, related_name='+')
+    public = models.BooleanField(default=False, help_text='I have this teacher\'s permission to publish their name, subjects and approved photo. Phone stays private.')
+
+    def clean(self):
+        if self.academy_id and self.academy.kind != 'academy':
+            raise ValidationError('Staff profiles belong to an academy.')
+        if self.photo_id and self.photo.teacher_id != self.academy_id:
+            raise ValidationError('Choose an image owned by this academy.')
 
 
 class ServiceArea(models.Model):
@@ -197,6 +230,8 @@ class Application(Record):
     applicant = models.ForeignKey(USER, null=True, blank=True, on_delete=models.PROTECT)
     name = models.CharField(max_length=150)
     age = models.PositiveSmallIntegerField(validators=[MaxValueValidator(120)])
+    parent_name = models.CharField(max_length=150, blank=True)
+    parent_phone = models.CharField(max_length=20, blank=True, validators=[RegexValidator(r'^\+?[0-9]{10,15}$')])
     mobile = models.CharField(max_length=20, validators=[RegexValidator(r'^\+?[0-9]{10,15}$')])
     email = models.EmailField()
     pincode = models.CharField(max_length=6, validators=[PIN])
@@ -613,3 +648,9 @@ class TuitionComplaint(Record):
     enrolment = models.ForeignKey(Enrolment, null=True, blank=True, on_delete=models.PROTECT)
     event = models.ForeignKey(LearningEvent, null=True, blank=True, on_delete=models.PROTECT)
     asset = models.ForeignKey(MediaAsset, null=True, blank=True, on_delete=models.PROTECT)
+
+
+class PendingFileDeletion(models.Model):
+    storage_key = models.CharField(max_length=100, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    attempts = models.PositiveIntegerField(default=0)

@@ -195,8 +195,8 @@ def generate(rule, until=None):
 def mark_attendance(user, participant, status, note=''):
     lock_teacher(user, participant.session.batch.lesson.teacher)
     participant = SessionParticipant.objects.select_for_update().select_related('session').get(pk=participant.pk)
-    if not participant.eligible or participant.session.status == 'cancelled' or participant.session.start > timezone.now():
-        raise ValidationError('Attendance is available only for eligible students in classes that have started.')
+    if not participant.eligible or participant.session.status == 'cancelled' or (participant.session.start > timezone.now() and status != 'excused'):
+        raise ValidationError('Attendance requires an eligible student and a class that has started. Only excused leave can be recorded in advance.')
     obj, _ = Attendance.objects.get_or_create(participant=participant, defaults={'status': status, 'marked_by': user})
     obj.status, obj.note, obj.marked_by = status, note, user
     obj.full_clean()
@@ -205,6 +205,27 @@ def mark_attendance(user, participant, status, note=''):
     from .activities import award
     award(participant.enrolment, 'attendance', 'attendance', obj, status in ('present', 'late'), obj.updated_at.isoformat())
     return obj
+
+
+@transaction.atomic
+def record_group_leave(user, batch, enrolment, start_date, end_date, status, note):
+    teacher = lock_teacher(user, batch.lesson.teacher)
+    if teacher.status != 'approved':
+        raise ValidationError('Teacher approval is required.')
+    if status not in ('excused', 'absent') or start_date > end_date:
+        raise ValidationError('Choose a valid leave/absence status and date range.')
+    if not Enrolment.objects.filter(pk=enrolment.pk, lesson=batch.lesson, membership__batch=batch, status='active').exists():
+        raise ValidationError('Select an active student in this group.')
+    people = list(SessionParticipant.objects.select_for_update().filter(
+        enrolment=enrolment, eligible=True, session__batch=batch, session__status='scheduled',
+        session__start__date__gte=start_date, session__start__date__lte=end_date).select_related('session'))
+    if not people:
+        raise ValidationError('No scheduled classes for this student in these dates. Create the timetable first.')
+    if Attendance.objects.filter(participant__in=people).exists():
+        raise ValidationError('Some classes already have attendance or leave. Review and update those classes individually.')
+    for person in people:
+        mark_attendance(user, person, status, note)
+    return len(people)
 
 
 @transaction.atomic
@@ -291,3 +312,98 @@ def review_guardian(user, link, status, verification):
     link.save()
     audit(user, link, 'guardian_review')
     notify(f'guardian:{link.pk}:{link.updated_at.isoformat()}', 'Learning access reviewed', [link.user_id])
+
+
+@transaction.atomic
+def add_named_student(user, batch, name, phone, subject):
+    from .models import Learner
+    teacher = lock_teacher(user, batch.lesson.teacher)
+    if teacher.status != 'approved':
+        raise PermissionDenied
+    lesson = Lesson.objects.select_for_update().get(pk=batch.lesson_id)
+    batch = Batch.objects.select_for_update().get(pk=batch.pk)
+    if not lesson.active or batch.status != 'active' or (lesson.end_date and lesson.end_date < timezone.localdate()):
+        raise ValidationError('Choose an active group that has not ended.')
+    if lesson.enrolments.filter(status='active').count() >= lesson.capacity:
+        raise ValidationError('Lesson is full.')
+    if batch.memberships.filter(enrolment__status='active').count() >= batch.capacity:
+        raise ValidationError('Group is full.')
+    from django.contrib.auth import get_user_model
+    import re
+    if not re.fullmatch(r'[0-9]{10}', phone) or not get_user_model().objects.filter(phone=phone, is_active=True).exists():
+        raise ValidationError("This phone number is not registered to an active account. Ask the student or parent to register first.")
+    if not lesson.subjects.filter(pk=subject.pk, active=True).exists():
+        raise ValidationError('Choose a subject taught in this group.')
+    if batch.memberships.filter(enrolment__status='active', enrolment__learner__phone=phone, enrolment__learner__name__iexact=name.strip()).exists():
+        raise ValidationError('This student is already in this group.')
+    # Registration is checked only; it never grants account or guardian access.
+    learner = Learner(name=name.strip(), phone=phone, created_by=user, pincode='')
+    learner.full_clean(exclude=['pincode'])
+    learner.save()
+    learner.interests.add(subject)
+    enrolment = Enrolment(learner=learner, lesson=lesson)
+    enrolment.full_clean()
+    enrolment.save()
+    transfer(user, enrolment, batch)
+    audit(user, enrolment, 'student_added_by_name')
+    return enrolment
+
+
+@transaction.atomic
+def edit_group(user, batch, form):
+    teacher = lock_teacher(user, batch.lesson.teacher)
+    if teacher.status != 'approved':
+        raise PermissionDenied
+    batch = Batch.objects.select_for_update().get(pk=batch.pk)
+    lesson = Lesson.objects.select_for_update().get(pk=batch.lesson_id)
+    data = form.cleaned_data
+    if lesson.batches.exclude(pk=batch.pk).exists():
+        raise ValidationError('This legacy group shares lesson details with another group. Edit its lesson and schedule separately to preserve the other group.')
+    if data['capacity'] < max(batch.memberships.filter(enrolment__status='active').count(), lesson.enrolments.filter(status='active').count()):
+        raise ValidationError('Maximum students cannot be below the current enrolment.')
+    lesson = form.save(commit=False)
+    lesson.save()
+    # Replace subject selection rather than adding duplicates on edits.
+    from .forms import resolve_subjects
+    lesson.subjects.set(resolve_subjects(data['new_subjects']))
+    for field in ('name', 'capacity', 'mode', 'location', 'status'):
+        setattr(batch, field, data[field])
+    batch.save()
+    rules = list(batch.rules.select_for_update().filter(active=True))
+    desired = {(day, start): duration for day, start, duration in data['slots']}
+    now = timezone.now()
+    for rule in rules:
+        key = (rule.weekday, rule.start_time)
+        if key not in desired or batch.status != 'active':
+            rule.active = False
+            rule.save(update_fields=['active'])
+            for session in ClassSession.objects.filter(rule=rule, start__gte=now, status='scheduled'):
+                session.status = 'cancelled'
+                session.reason = 'Group schedule updated'
+                save_session(user, session)
+    for rule in rules:
+        key = (rule.weekday, rule.start_time)
+        if rule.active and key in desired:
+            desired.pop(key)
+            rule.meeting_url = data['meeting_url']
+            rule.save(update_fields=['meeting_url'])
+    for session in batch.sessions.filter(start__gte=now, status='scheduled'):
+        if batch.status != 'active':
+            session.status = 'cancelled'
+            session.reason = 'Group cancelled or archived'
+        else:
+            session.mode, session.location, session.meeting_url = batch.mode, batch.location, data['meeting_url']
+        save_session(user, session)
+    if batch.status == 'active':
+        today = timezone.localdate()
+        for (day, start), duration in desired.items():
+            first = today + timedelta(days=(day-today.weekday()) % 7)
+            if first == today and start <= timezone.localtime().time().replace(tzinfo=None):
+                first += timedelta(days=7)
+            if lesson.end_date and first > lesson.end_date:
+                raise ValidationError('This group has ended; its weekly schedule cannot be extended from this form.')
+            rule = ScheduleRule(batch=batch, weekday=day, start_time=start, duration_minutes=duration,
+                start_date=first, end_date=lesson.end_date or today+timedelta(days=365),
+                timezone_name='Asia/Kolkata', meeting_url=data['meeting_url'])
+            rule.full_clean(); rule.save(); generate(rule)
+    audit(user, batch, 'group_updated')

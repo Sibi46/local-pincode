@@ -3332,8 +3332,17 @@ def manage_discounts(request):
 
 @super_admin_required
 def manage_pincodes(request, district_id=None):
+    states = State.objects.all().order_by('name')
+    district_id = district_id or request.GET.get('district_id')
+    if district_id and not str(district_id).isdigit():
+        district_id = None
+    selected = get_object_or_404(District.objects.select_related('state'), pk=district_id) if district_id else None
+    state_id = str(selected.state_id) if selected else request.GET.get('state_filter', '')
+    if state_id and not state_id.isdigit():
+        state_id = ''
     districts = District.objects.select_related('state').order_by('state__name', 'name')
-    selected  = get_object_or_404(District, pk=district_id) if district_id else None
+    if state_id:
+        districts = districts.filter(state_id=state_id)
     if request.method == 'POST' and selected:
         code      = request.POST.get('code', '').strip()
         area_name = request.POST.get('area_name', '').strip()
@@ -3342,7 +3351,7 @@ def manage_pincodes(request, district_id=None):
             messages.success(request, f'PIN {code} added.')
         return redirect('manage_pincodes', district_id=selected.pk)
     pincodes = selected.pincodes.all() if selected else []
-    return render(request, 'manage_pincodes.html', {'districts': districts, 'selected': selected, 'pincodes': pincodes})
+    return render(request, 'manage_pincodes.html', {'states': states, 'state_filter': state_id, 'districts': districts, 'selected': selected, 'pincodes': pincodes})
 
 
 @super_admin_required
