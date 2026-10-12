@@ -315,7 +315,7 @@ def review_guardian(user, link, status, verification):
 
 
 @transaction.atomic
-def add_named_student(user, batch, name):
+def add_named_student(user, batch, name, phone, subject):
     from .models import Learner
     teacher = lock_teacher(user, batch.lesson.teacher)
     if teacher.status != 'approved':
@@ -328,10 +328,19 @@ def add_named_student(user, batch, name):
         raise ValidationError('Lesson is full.')
     if batch.memberships.filter(enrolment__status='active').count() >= batch.capacity:
         raise ValidationError('Group is full.')
-    # A private teacher-managed record, never an account/guardian match by name.
-    learner = Learner(name=name.strip(), created_by=user, pincode='')
+    from django.contrib.auth import get_user_model
+    import re
+    if not re.fullmatch(r'[0-9]{10}', phone) or not get_user_model().objects.filter(phone=phone, is_active=True).exists():
+        raise ValidationError("This phone number is not registered to an active account. Ask the student or parent to register first.")
+    if not lesson.subjects.filter(pk=subject.pk, active=True).exists():
+        raise ValidationError('Choose a subject taught in this group.')
+    if batch.memberships.filter(enrolment__status='active', enrolment__learner__phone=phone, enrolment__learner__name__iexact=name.strip()).exists():
+        raise ValidationError('This student is already in this group.')
+    # Registration is checked only; it never grants account or guardian access.
+    learner = Learner(name=name.strip(), phone=phone, created_by=user, pincode='')
     learner.full_clean(exclude=['pincode'])
     learner.save()
+    learner.interests.add(subject)
     enrolment = Enrolment(learner=learner, lesson=lesson)
     enrolment.full_clean()
     enrolment.save()

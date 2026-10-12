@@ -57,7 +57,10 @@ class GroupWorkflowTests(TestCase):
 
     def test_add_student_by_name(self):
         url = reverse('tuition:group_students', args=[self.batch.uid])
-        response = self.client.post(url, {'name': 'New student'})
+        self.parent.phone = '9876543210'; self.parent.save()
+        subject = m.Subject.objects.create(name='Piano', slug='piano')
+        self.lesson.subjects.add(subject)
+        response = self.client.post(url, {'name': 'New student', 'phone': self.parent.phone, 'subject': subject.pk})
         self.assertRedirects(response, reverse('tuition:batch', args=[self.batch.uid]))
         enrolment = m.Enrolment.objects.get(learner__name='New student')
         self.assertEqual(enrolment.membership.batch_id, self.batch.pk)

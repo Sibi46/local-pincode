@@ -267,9 +267,16 @@ class GroupCreateForm(LessonForm):
 class GroupMemberForm(forms.Form):
     name = forms.CharField(max_length=150, label='Student name',
         widget=forms.TextInput(attrs={'placeholder': 'Enter student name', 'autocomplete': 'off'}))
+    phone = forms.RegexField(regex=r'^[0-9]{10}$', label='Registered student / parent phone',
+        help_text="For a child, enter the parent's registered phone number.",
+        widget=forms.TextInput(attrs={'type': 'tel', 'inputmode': 'numeric', 'maxlength': '10'}))
+    subject = forms.ModelChoiceField(queryset=m.Subject.objects.none(), label='Subject')
 
     def __init__(self, *args, batch, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields['subject'].queryset = batch.lesson.subjects.filter(active=True)
+        self.fields['subject'].help_text = 'Choose a subject taught in this group. Edit the group first if no subjects are listed.'
+
 
 
 class BatchForm(StyledForm):
