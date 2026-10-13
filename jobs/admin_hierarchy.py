@@ -93,14 +93,26 @@ class PhoneAccountForm(forms.Form):
     def clean(self):
         data = super().clean()
         if data.get('password'):
-            validate_password(data['password'], User(username=data.get('phone', ''), phone=data.get('phone', '')))
+            validate_password(data['password'], User(username=data.get('phone', ''), phone=data.get('phone', ''), email=data.get('email', '')))
         return data
 
     def save(self, commit=True):
-        user = User(username=self.cleaned_data['phone'], phone=self.cleaned_data['phone'])
+        user = User(username=self.cleaned_data['phone'], phone=self.cleaned_data['phone'], email=self.cleaned_data.get('email', ''))
         user.set_password(self.cleaned_data['password'])
         if commit: user.save()
         return user
+
+
+class CountryAccountForm(PhoneAccountForm):
+    email = forms.EmailField(label='Email address', max_length=254,
+        widget=forms.EmailInput(attrs={'autocomplete': 'email'}))
+    field_order = ['phone', 'email', 'password']
+
+    def clean_email(self):
+        email = self.cleaned_data['email'].strip().lower()
+        if User.objects.filter(Q(email__iexact=email) | Q(username__iexact=email)).exists():
+            raise forms.ValidationError('This email address already belongs to an account.')
+        return email
 
 
 class TeamFilterForm(forms.Form):
@@ -221,7 +233,8 @@ def state_choices(request):
 def workspace(request):
     profile = authority(request.user)
     can_create = profile is None or bool(NEXT[profile.hierarchy_level])
-    account = PhoneAccountForm(request.POST or None)
+    country_creation = profile is None and (request.POST.get('level') == 'country' if request.method == 'POST' else request.GET.get('create') != 'it')
+    account = (CountryAccountForm if country_creation else PhoneAccountForm)(request.POST or None)
     assignment = AssignmentForm(request.POST or None, actor=request.user)
     level = NEXT[profile.hierarchy_level][0] if profile and can_create else ('it' if request.GET.get('create') == 'it' else 'country')
     create_label = 'Create ' + dict(AdminProfile.HIERARCHY_CHOICES)[level]

@@ -123,7 +123,7 @@ class HierarchyTests(TestCase):
         for index, level in enumerate(['country', 'state', 'district', 'area', 'salesman']):
             self.client.force_login(parent)
             phone = '900000004' + str(index)
-            data = {'phone':phone, 'password':'Long-Secure-pass-789!', 'level':level,
+            data = {'phone':phone, 'email': 'country@example.com', 'password':'Long-Secure-pass-789!', 'level':level,
                 'country':self.country.pk, 'state':self.state.pk, 'district':self.district.pk, 'area':self.area.code}
             self.assertEqual(self.client.post(reverse('hierarchy_workspace'), data).status_code, 302)
             parent = User.objects.get(phone=phone)
@@ -234,3 +234,22 @@ class HierarchyTests(TestCase):
         self.assertFalse(form.fields['area'].queryset.filter(pk=pin.pk).exists())
         self.assertFalse(form.fields['district'].queryset.filter(pk=district.pk).exists())
         self.assertTrue(PinCode.objects.filter(pk=pin.pk).exists())
+
+    def test_country_email_required_saved_and_duplicate_credentials_rejected(self):
+        from .admin_hierarchy import CountryAccountForm
+        data = {'phone':'9000000088', 'password':'Long-Secure-pass-789!'}
+        self.assertIn('email', CountryAccountForm(data).errors)
+        data['email'] = 'NewAdmin@Example.com'
+        self.client.force_login(self.root)
+        response = self.client.post(reverse('hierarchy_workspace'), {**data, 'level':'country', 'country':self.country.pk})
+        self.assertEqual(response.status_code, 302)
+        user = User.objects.get(phone=data['phone'])
+        self.assertEqual(user.email, 'newadmin@example.com')
+        form = CountryAccountForm(data)
+        self.assertIn('phone', form.errors)
+        self.assertIn('email', form.errors)
+        self.assertIn('email', CountryAccountForm({**data, 'phone':'9000000089', 'email':'invalid'}).errors)
+        User.objects.create_user('other-email@example.com', business_phone='9000000090')
+        form = CountryAccountForm({**data, 'phone':'9000000090', 'email':'OTHER-email@example.com'})
+        self.assertIn('phone', form.errors)
+        self.assertIn('email', form.errors)

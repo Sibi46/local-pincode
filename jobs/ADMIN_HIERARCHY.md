@@ -95,3 +95,5 @@ rows and 38 missing-parent district rows reported. 22 ISO territories/countries 
 no state rows and 61 no supported district rows in this snapshot. No guarantee of
 complete or current worldwide administrative boundaries. MySQL bulk import and
 production/device verification have not been performed for this update.
+
+Country Admin creation now requires phone number, email address and password. Existing phone numbers (including business phones/usernames) and case-insensitive email/login collisions are rejected. Other hierarchy roles retain phone/password creation. Existing accounts are not changed; no schema migration.
