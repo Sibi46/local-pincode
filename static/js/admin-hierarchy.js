@@ -3,7 +3,7 @@
   const names = ['country', 'state', 'district', 'area'];
   if (filters) names.forEach((name, index) => {
     const field = filters.elements[name];
-    if (field) field.addEventListener('change', () => {
+    if (field && name !== 'area') field.addEventListener('change', () => {
       names.slice(index + 1).forEach(child => { if (!filters.elements[child].disabled) filters.elements[child].value = ''; });
       filters.requestSubmit();
     });

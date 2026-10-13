@@ -124,7 +124,7 @@ class HierarchyTests(TestCase):
             self.client.force_login(parent)
             phone = '900000004' + str(index)
             data = {'phone':phone, 'password':'Long-Secure-pass-789!', 'level':level,
-                'country':self.country.pk, 'state':self.state.pk, 'district':self.district.pk, 'area':self.area.pk}
+                'country':self.country.pk, 'state':self.state.pk, 'district':self.district.pk, 'area':self.area.code}
             self.assertEqual(self.client.post(reverse('hierarchy_workspace'), data).status_code, 302)
             parent = User.objects.get(phone=phone)
             self.assertEqual(parent.username, phone)
@@ -207,3 +207,30 @@ class HierarchyTests(TestCase):
         self.assertFalse(form.fields['country'].queryset.filter(code='US').exists())
         self.client.force_login(self.root)
         self.assertContains(self.client.get(reverse('hierarchy_workspace')), 'Singapore')
+
+    def test_pincode_text_filter_and_assignment(self):
+        self.client.force_login(self.root)
+        response = self.client.get(reverse('hierarchy_workspace'), {'area': '600001'})
+        self.assertEqual(response.context['team'].count(), 2)
+        self.assertEqual(response.context['filter_form'].fields['area'].widget.input_type, 'text')
+        response = self.client.get(reverse('hierarchy_workspace'), {'area': '123'})
+        self.assertIn('area', response.context['filter_form'].errors)
+        form = AssignmentForm({'level':'area','area':'600001'}, actor=self.chain[2].user)
+        self.assertTrue(form.is_valid(), form.errors)
+        self.assertEqual(form.cleaned_data['area'], self.area)
+        other_district = District.objects.create(name='Elsewhere', state=self.state)
+        PinCode.objects.create(code='600002', district=other_district)
+        form = AssignmentForm({'level':'area','area':'600002'}, actor=self.chain[2].user)
+        self.assertFalse(form.is_valid())
+
+    def test_unassigned_locations_excluded_without_deleting_records(self):
+        from .admin_hierarchy import TeamFilterForm
+        unassigned = State.objects.create(name='Unassigned geography', code='UNASN', country=self.country)
+        district = District.objects.create(name='Unassigned district', state=unassigned)
+        pin = PinCode.objects.create(code='699999', district=district)
+        filters = TeamFilterForm({'country': self.country.pk}, actor=self.root)
+        self.assertFalse(filters.fields['state'].queryset.filter(pk=unassigned.pk).exists())
+        form = AssignmentForm(actor=self.root)
+        self.assertFalse(form.fields['area'].queryset.filter(pk=pin.pk).exists())
+        self.assertFalse(form.fields['district'].queryset.filter(pk=district.pk).exists())
+        self.assertTrue(PinCode.objects.filter(pk=pin.pk).exists())

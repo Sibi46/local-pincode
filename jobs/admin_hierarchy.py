@@ -108,12 +108,14 @@ class TeamFilterForm(forms.Form):
     country = forms.ModelChoiceField(Country.objects.all().order_by('name'), required=False, empty_label='All countries')
     state = forms.ModelChoiceField(State.objects.none(), required=False, empty_label='All states')
     district = forms.ModelChoiceField(District.objects.none(), required=False, empty_label='All districts')
-    area = forms.ModelChoiceField(PinCode.objects.none(), required=False, empty_label='All PIN codes', label='PIN code')
+    area = forms.RegexField(r'^[1-9][0-9]{5}$', required=False, label='PIN code',
+        widget=forms.TextInput(attrs={'inputmode': 'numeric', 'maxlength': '6', 'placeholder': 'Enter 6-digit PIN code'}),
+        error_messages={'invalid': 'Enter a valid 6-digit PIN code.'})
 
     def __init__(self, *args, actor, **kwargs):
         super().__init__(*args, **kwargs)
         profile = authority(actor)
-        for name, parent, lookup in [('country', None, None), ('state', 'country', 'country_id'), ('district', 'state', 'state_id'), ('area', 'district', 'district_id')]:
+        for name, parent, lookup in [('country', None, None), ('state', 'country', 'country_id'), ('district', 'state', 'state_id')]:
             field = self.fields[name]
             if profile and getattr(profile, name + '_id'):
                 field.queryset = field.queryset.model.objects.filter(pk=getattr(profile, name + '_id'))
@@ -125,14 +127,23 @@ class TeamFilterForm(forms.Form):
                 if str(raw).isdigit() and self.fields[parent].queryset.filter(pk=raw).exists():
                     field.queryset = field.queryset.model.objects.filter(**{lookup: raw}).order_by('code' if name == 'area' else 'name')
 
+        self.fields['state'].queryset = self.fields['state'].queryset.exclude(code='UNASN')
+        self.fields['district'].queryset = self.fields['district'].queryset.exclude(state__code='UNASN').exclude(name='Unassigned district')
+        if profile and profile.area_id:
+            self.fields['area'].initial = profile.area.code
+            self.fields['area'].disabled = True
+
+
 
 def team_overview(request):
     form = TeamFilterForm(request.GET, actor=request.user, auto_id='filter_%s')
     team = visible_team(request.user)
     if form.is_valid():
-        for name in ('country', 'state', 'district', 'area'):
+        for name in ('country', 'state', 'district'):
             if form.cleaned_data.get(name):
                 team = team.filter(**{name: form.cleaned_data[name]})
+        if form.cleaned_data.get('area'):
+            team = team.filter(area__code=form.cleaned_data['area'])
         q = form.cleaned_data.get('q')
         if q: team = team.filter(Q(country__name__icontains=q) | Q(user__phone__icontains=q) | Q(user__username__icontains=q))
     else:
@@ -144,9 +155,13 @@ def team_overview(request):
 class AssignmentForm(forms.Form):
     level = forms.ChoiceField(label='Role')
     country = forms.ModelChoiceField(queryset=Country.objects.filter(is_active=True).order_by('name'), required=False)
-    state = forms.ModelChoiceField(queryset=State.objects.filter(is_active=True), required=False)
-    district = forms.ModelChoiceField(queryset=District.objects.filter(is_active=True), required=False)
-    area = forms.ModelChoiceField(queryset=PinCode.objects.filter(is_active=True), required=False, label='Area / PIN code')
+    state = forms.ModelChoiceField(queryset=State.objects.filter(is_active=True).exclude(code='UNASN'), required=False)
+    district = forms.ModelChoiceField(queryset=District.objects.filter(is_active=True).exclude(state__code='UNASN').exclude(name='Unassigned district'), required=False)
+    area = forms.ModelChoiceField(
+        queryset=PinCode.objects.filter(is_active=True).exclude(district__state__code='UNASN').exclude(district__name='Unassigned district'),
+        required=False, label='Area / PIN code', to_field_name='code',
+        widget=forms.TextInput(attrs={'inputmode': 'numeric', 'maxlength': '6', 'placeholder': 'Enter 6-digit PIN code'}),
+        error_messages={'invalid_choice': 'Enter an active PIN code mapped to your assigned district. Unmapped PIN codes need location mapping first.'})
 
     def __init__(self, *args, actor, **kwargs):
         super().__init__(*args, **kwargs)
@@ -198,7 +213,7 @@ def state_choices(request):
     if authority(request.user) is not None:
         raise PermissionDenied
     country = request.GET.get('country', '')
-    states = State.objects.filter(country_id=country, country__is_active=True, is_active=True).order_by('name') if country.isdigit() else State.objects.none()
+    states = State.objects.filter(country_id=country, country__is_active=True, is_active=True).exclude(code='UNASN').order_by('name') if country.isdigit() else State.objects.none()
     return JsonResponse({'states': list(states.values('id', 'name'))})
 
 
@@ -219,7 +234,7 @@ def workspace(request):
     # IT state choices follow the selected country on POST, validated again in clean().
     if level == 'it':
         raw_country = request.POST.get('country') if request.method == 'POST' else request.GET.get('country')
-        assignment.fields['state'].queryset = State.objects.filter(is_active=True, country_id=raw_country) if str(raw_country).isdigit() else State.objects.none()
+        assignment.fields['state'].queryset = State.objects.filter(is_active=True, country_id=raw_country).exclude(code='UNASN') if str(raw_country).isdigit() else State.objects.none()
     filter_form, team, counts = team_overview(request)
     if request.method == 'POST':
         if not can_create: raise PermissionDenied
