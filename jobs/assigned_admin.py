@@ -48,6 +48,14 @@ class AssignedAdminMiddleware:
         if not request.user.is_authenticated or request.user.admin_role != 'scoped_admin':
             return None
         name = request.resolver_match.url_name
+        if getattr(getattr(request.user, 'admin_profile', None), 'hierarchy_level', ''):
+            from .admin_hierarchy import authority
+            authority(request.user)
+            if name not in {'hierarchy_workspace', 'hierarchy_geography', 'hierarchy_toggle', 'hierarchy_support', 'hierarchy_password', 'assigned_dashboard', 'dashboard', 'logout'}:
+                if request.method in ('GET', 'HEAD'):
+                    return redirect('hierarchy_workspace')
+                raise PermissionDenied
+            return None
         if request.resolver_match.namespace == 'tuition' and name in {'admin_hub', 'content_review', 'media_preview', 'teacher_review', 'student_review', 'complaint_review'}:
             from tuition.permissions import admin_teachers
             admin_teachers(request.user)
@@ -77,6 +85,8 @@ def profile_for(user):
     if user.admin_role != 'scoped_admin':
         raise PermissionDenied
     profile = get_object_or_404(AdminProfile.objects.select_related('state'), user=user, role='scoped_admin', is_active=True)
+    if profile.hierarchy_level:
+        raise PermissionDenied
     if not profile.all_states and (not profile.state_id or not profile.state.is_active):
         raise PermissionDenied('Your state assignment is unavailable. Contact the Main Super Admin.')
     return profile
@@ -147,6 +157,12 @@ class AdminLoginForm(AuthenticationForm):
             raise forms.ValidationError('This account does not have access to the admin workspace.')
         if user.admin_role == 'scoped_admin':
             profile = getattr(user, 'admin_profile', None)
+            if profile and profile.hierarchy_level:
+                from .admin_hierarchy import authority
+                try:
+                    authority(user)
+                except PermissionDenied:
+                    raise forms.ValidationError('Your team assignment is unavailable.')
             if not profile or not profile.is_active:
                 raise forms.ValidationError('Your admin access is suspended. Contact the Main Super Admin.')
 
@@ -192,7 +208,7 @@ def manage_admins(request):
                 record_activity(request.user, 'team', 'create_admin', user.pk, user.username, {'after': scope_snapshot(profile)})
             messages.success(request, f'Admin created. Login username: {user.username}.')
             return redirect('manage_assigned_admins')
-    admins = AdminProfile.objects.filter(role='scoped_admin').select_related('user', 'state')
+    admins = AdminProfile.objects.filter(role='scoped_admin', hierarchy_level='').select_related('user', 'state')
     for admin in admins:
         admin.section_labels = ', '.join(SECTIONS[s][0] for s in admin.sections if s in SECTIONS)
     return render(request, 'assigned_admin/manage.html', {'account_form': account_form, 'scope_form': scope_form, 'admins': admins})
@@ -200,7 +216,7 @@ def manage_admins(request):
 
 @main_admin_required
 def edit_admin(request, pk):
-    profile = get_object_or_404(AdminProfile, pk=pk, role='scoped_admin', user__admin_role='scoped_admin')
+    profile = get_object_or_404(AdminProfile, pk=pk, hierarchy_level='', role='scoped_admin', user__admin_role='scoped_admin')
     before = scope_snapshot(profile)
     form = ScopeForm(request.POST if request.method == 'POST' else None, instance=profile)
     if request.method == 'POST' and form.is_valid():
@@ -216,7 +232,7 @@ def edit_admin(request, pk):
 @require_POST
 def toggle_assigned_admin(request, pk):
     with transaction.atomic():
-        profile = get_object_or_404(AdminProfile.objects.select_for_update(), pk=pk, role='scoped_admin', user__admin_role='scoped_admin')
+        profile = get_object_or_404(AdminProfile.objects.select_for_update(), pk=pk, hierarchy_level='', role='scoped_admin', user__admin_role='scoped_admin')
         profile.is_active = not profile.is_active
         profile.save(update_fields=['is_active'])
         User.objects.filter(pk=profile.user_id).update(is_active=profile.is_active)
@@ -227,6 +243,8 @@ def toggle_assigned_admin(request, pk):
 
 @login_required
 def assigned_dashboard(request):
+    if getattr(getattr(request.user, 'admin_profile', None), 'hierarchy_level', ''):
+        return redirect('hierarchy_workspace')
     profile = profile_for(request.user)
     sections = []
     pending_filters = {'jobs': {'is_approved': False, 'status': 'active'}, 'news': {'status': 'draft'}, 'offers': {'is_active': False}, 'ads': {'status': 'pending'}, 'community': {'is_verified': False}, 'vouchers': {'status': 'pending'}}

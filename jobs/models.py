@@ -608,7 +608,17 @@ class AdPayment(models.Model):
 # ADMIN HIERARCHY MODULE
 # ============================================================
 
+class Country(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+    code = models.CharField(max_length=2, unique=True)
+    is_active = models.BooleanField(default=True)
+
+    def __str__(self):
+        return self.name
+
+
 class State(models.Model):
+    country = models.ForeignKey(Country, null=True, blank=True, on_delete=models.PROTECT, related_name="states")
     name      = models.CharField(max_length=100, unique=True)
     code      = models.CharField(max_length=5, unique=True)
     is_active = models.BooleanField(default=True)
@@ -653,6 +663,12 @@ class PinCode(models.Model):
 
 
 class AdminProfile(models.Model):
+    HIERARCHY_CHOICES = [('country', 'Country Admin'), ('state', 'State Admin'),
+        ('district', 'District Admin'), ('area', 'Area Admin'), ('salesman', 'Salesman'), ('it', 'State IT Admin')]
+    hierarchy_level = models.CharField(max_length=12, choices=HIERARCHY_CHOICES, blank=True)
+    country = models.ForeignKey(Country, null=True, blank=True, on_delete=models.PROTECT)
+    area = models.ForeignKey(PinCode, null=True, blank=True, on_delete=models.PROTECT)
+
     ADMIN_ROLES = [
         ('scoped_admin',   'Assigned Admin'),
         ('super_admin',    'Super Admin'),
