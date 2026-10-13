@@ -33,7 +33,7 @@ class HierarchyTests(TestCase):
             self.client.force_login(p.user)
             self.assertEqual(self.client.get(reverse('hierarchy_workspace')).status_code, 200)
         self.client.force_login(self.root)
-        self.assertContains(self.client.get(reverse('hierarchy_workspace')), 'Create account')
+        self.assertContains(self.client.get(reverse('hierarchy_workspace')), 'Create Country Admin')
 
     def test_parent_suspension_blocks_descendants(self):
         AdminProfile.objects.filter(pk=self.chain[0].pk).update(is_active=False)
@@ -62,10 +62,9 @@ class HierarchyTests(TestCase):
 
     def test_create_salesman_and_no_staff(self):
         self.client.force_login(self.chain[3].user)
-        response = self.client.post(reverse('hierarchy_workspace'), {'first_name':'Sales', 'username':'new-sales',
-            'password1':'Long-Secure-pass-789!', 'password2':'Long-Secure-pass-789!', 'level':'salesman'})
+        response = self.client.post(reverse('hierarchy_workspace'), {'phone':'9000000034', 'password':'Long-Secure-pass-789!', 'level':'salesman'})
         self.assertEqual(response.status_code, 302)
-        user = User.objects.get(username='new-sales')
+        user = User.objects.get(phone='9000000034')
         self.assertFalse(user.is_staff)
         self.assertFalse(user.is_superuser)
         self.assertTrue(user.salesman_profile.is_active)
@@ -118,3 +117,48 @@ class HierarchyTests(TestCase):
         self.assertEqual(self.client.post(reverse('hierarchy_geography'), {'country':self.country.pk, 'states':[unmapped.pk]}).status_code, 302)
         unmapped.refresh_from_db()
         self.assertEqual(unmapped.country, self.country)
+
+    def test_phone_creation_and_login_flow(self):
+        parent = self.root
+        for index, level in enumerate(['country', 'state', 'district', 'area', 'salesman']):
+            self.client.force_login(parent)
+            phone = '900000004' + str(index)
+            data = {'phone':phone, 'password':'Long-Secure-pass-789!', 'level':level,
+                'country':self.country.pk, 'state':self.state.pk, 'district':self.district.pk, 'area':self.area.pk}
+            self.assertEqual(self.client.post(reverse('hierarchy_workspace'), data).status_code, 302)
+            parent = User.objects.get(phone=phone)
+            self.assertEqual(parent.username, phone)
+            self.assertTrue(parent.check_password(data['password']))
+            self.client.logout()
+            self.assertEqual(self.client.post(reverse('assigned_login'), {'username':phone, 'password':data['password']}).status_code, 302)
+            response = self.client.get(reverse('assigned_dashboard'), follow=True)
+            self.assertContains(response, parent.admin_profile.get_hierarchy_level_display() + ' dashboard')
+
+    def test_super_cannot_skip_levels_and_duplicate_phone(self):
+        from .admin_hierarchy import PhoneAccountForm
+        self.assertFalse(AssignmentForm({'level':'state', 'country':self.country.pk, 'state':self.state.pk}, actor=self.root).is_valid())
+        User.objects.create_user('registered', phone='9000000011')
+        self.assertFalse(PhoneAccountForm({'phone':'9000000011','password':'Long-Secure-pass-789!'}).is_valid())
+        self.assertFalse(PhoneAccountForm({'phone':'123','password':'123'}).is_valid())
+
+    def test_cascading_filters_and_counts(self):
+        self.client.force_login(self.root)
+        response = self.client.get(reverse('hierarchy_workspace'), {'country': self.country.pk})
+        self.assertEqual(response.context['team'].count(), 5)
+        self.assertEqual(list(response.context['filter_form'].fields['state'].queryset), list(State.objects.filter(country=self.country).order_by('name')))
+        response = self.client.get(reverse('hierarchy_workspace'), {'country':self.country.pk, 'state': self.state.pk, 'district': self.district.pk})
+        self.assertEqual(response.context['team'].count(), 3)
+        self.assertEqual(sum(item['total'] for item in response.context['counts']), 3)
+        response = self.client.get(reverse('hierarchy_workspace'), {'country':self.country.pk, 'state':self.other.pk, 'district':self.district.pk})
+        self.assertEqual(response.context['team'].count(), 0)
+        self.client.force_login(self.chain[1].user)
+        response = self.client.get(reverse('hierarchy_workspace'), {'state':self.other.pk})
+        self.assertEqual(response.context['team'].count(), 3)
+
+    def test_it_state_options_and_creation(self):
+        self.client.force_login(self.root)
+        response = self.client.get(reverse('hierarchy_states'), {'country':self.country.pk})
+        self.assertEqual(len(response.json()['states']), 2)
+        response = self.client.post(reverse('hierarchy_workspace') + '?create=it', {'level':'it', 'country':self.country.pk, 'state':self.state.pk, 'phone':'9000000066', 'password':'Long-Secure-pass-789!'})
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(User.objects.get(phone='9000000066').admin_profile.hierarchy_level, 'it')

@@ -9,7 +9,8 @@ from django.urls import path
 from django.views.decorators.http import require_POST
 from django.utils import timezone
 from .models import Country, State, District, PinCode, AdminProfile, User, Complaint, AdminActivity, UserNotification
-from .assigned_admin import AdminAccountForm
+from django.contrib.auth.password_validation import validate_password
+from django.db.models import Q, Count
 from .admin_activity import record_activity
 
 NEXT = {'country': ['state'], 'state': ['district'], 'district': ['area'], 'area': ['salesman'], 'it': [], 'salesman': []}
@@ -78,6 +79,68 @@ def visible_team(user):
     return qs
 
 
+class PhoneAccountForm(forms.Form):
+    phone = forms.RegexField(r'^[0-9]{10}$', label='Phone number', max_length=10,
+        widget=forms.TextInput(attrs={'inputmode': 'numeric', 'autocomplete': 'off'}))
+    password = forms.CharField(widget=forms.PasswordInput(attrs={'autocomplete': 'new-password'}))
+
+    def clean_phone(self):
+        phone = self.cleaned_data['phone']
+        if User.objects.filter(Q(phone=phone) | Q(username__iexact=phone) | Q(business_phone=phone) | Q(email__iexact=phone)).exists():
+            raise forms.ValidationError('This phone number already belongs to an account.')
+        return phone
+
+    def clean(self):
+        data = super().clean()
+        if data.get('password'):
+            validate_password(data['password'], User(username=data.get('phone', ''), phone=data.get('phone', '')))
+        return data
+
+    def save(self, commit=True):
+        user = User(username=self.cleaned_data['phone'], phone=self.cleaned_data['phone'])
+        user.set_password(self.cleaned_data['password'])
+        if commit: user.save()
+        return user
+
+
+class TeamFilterForm(forms.Form):
+    q = forms.CharField(required=False, label='Search country or phone', max_length=100)
+    country = forms.ModelChoiceField(Country.objects.all().order_by('name'), required=False, empty_label='All countries')
+    state = forms.ModelChoiceField(State.objects.none(), required=False, empty_label='All states')
+    district = forms.ModelChoiceField(District.objects.none(), required=False, empty_label='All districts')
+    area = forms.ModelChoiceField(PinCode.objects.none(), required=False, empty_label='All PIN codes', label='PIN code')
+
+    def __init__(self, *args, actor, **kwargs):
+        super().__init__(*args, **kwargs)
+        profile = authority(actor)
+        for name, parent, lookup in [('country', None, None), ('state', 'country', 'country_id'), ('district', 'state', 'state_id'), ('area', 'district', 'district_id')]:
+            field = self.fields[name]
+            if profile and getattr(profile, name + '_id'):
+                field.queryset = field.queryset.model.objects.filter(pk=getattr(profile, name + '_id'))
+                field.initial = getattr(profile, name + '_id')
+                field.disabled = True
+            elif parent:
+                parent_id = getattr(profile, parent + '_id', None) if profile else None
+                raw = parent_id or self.data.get(parent, '')
+                if str(raw).isdigit() and self.fields[parent].queryset.filter(pk=raw).exists():
+                    field.queryset = field.queryset.model.objects.filter(**{lookup: raw}).order_by('code' if name == 'area' else 'name')
+
+
+def team_overview(request):
+    form = TeamFilterForm(request.GET, actor=request.user, auto_id='filter_%s')
+    team = visible_team(request.user)
+    if form.is_valid():
+        for name in ('country', 'state', 'district', 'area'):
+            if form.cleaned_data.get(name):
+                team = team.filter(**{name: form.cleaned_data[name]})
+        q = form.cleaned_data.get('q')
+        if q: team = team.filter(Q(country__name__icontains=q) | Q(user__phone__icontains=q) | Q(user__username__icontains=q))
+    else:
+        team = team.none()
+    totals = dict(team.values('hierarchy_level').annotate(total=Count('pk')).values_list('hierarchy_level', 'total'))
+    return form, team, [{'label': label, 'total': totals.get(key, 0)} for key, label in AdminProfile.HIERARCHY_CHOICES]
+
+
 class AssignmentForm(forms.Form):
     level = forms.ChoiceField(label='Role')
     country = forms.ModelChoiceField(queryset=Country.objects.filter(is_active=True), required=False)
@@ -89,7 +152,7 @@ class AssignmentForm(forms.Form):
         super().__init__(*args, **kwargs)
         self.actor = actor
         self.parent = authority(actor)
-        levels = NEXT[self.parent.hierarchy_level] if self.parent else dict(AdminProfile.HIERARCHY_CHOICES)
+        levels = NEXT[self.parent.hierarchy_level] if self.parent else ['country', 'it']
         self.fields['level'].choices = [(k, v) for k, v in AdminProfile.HIERARCHY_CHOICES if k in levels]
         if self.parent:
             for field in ('country', 'state', 'district', 'area'):
@@ -130,11 +193,34 @@ class AssignmentForm(forms.Form):
 
 
 @login_required
+def state_choices(request):
+    from django.http import JsonResponse
+    if authority(request.user) is not None:
+        raise PermissionDenied
+    country = request.GET.get('country', '')
+    states = State.objects.filter(country_id=country, country__is_active=True, is_active=True).order_by('name') if country.isdigit() else State.objects.none()
+    return JsonResponse({'states': list(states.values('id', 'name'))})
+
+
+@login_required
 def workspace(request):
     profile = authority(request.user)
     can_create = profile is None or bool(NEXT[profile.hierarchy_level])
-    account = AdminAccountForm(request.POST or None)
+    account = PhoneAccountForm(request.POST or None)
     assignment = AssignmentForm(request.POST or None, actor=request.user)
+    level = NEXT[profile.hierarchy_level][0] if profile and can_create else ('it' if request.GET.get('create') == 'it' else 'country')
+    create_label = 'Create ' + dict(AdminProfile.HIERARCHY_CHOICES)[level]
+    assignment.fields['level'].initial = level
+    assignment.fields['level'].widget = forms.HiddenInput()
+    needed = {'country': ['country'], 'state': ['state'], 'district': ['district'], 'area': ['area'], 'salesman': [], 'it': ['country', 'state']}[level]
+    for name in ('country', 'state', 'district', 'area'):
+        if name not in needed:
+            assignment.fields[name].widget = forms.HiddenInput()
+    # IT state choices follow the selected country on POST, validated again in clean().
+    if level == 'it':
+        raw_country = request.POST.get('country') if request.method == 'POST' else request.GET.get('country')
+        assignment.fields['state'].queryset = State.objects.filter(is_active=True, country_id=raw_country) if str(raw_country).isdigit() else State.objects.none()
+    filter_form, team, counts = team_overview(request)
     if request.method == 'POST':
         if not can_create: raise PermissionDenied
         if account.is_valid() and assignment.is_valid():
@@ -147,7 +233,7 @@ def workspace(request):
                     State.objects.select_for_update().get(pk=d['state'].pk)
                     if AdminProfile.objects.filter(hierarchy_level='it', state=d['state']).exists():
                         assignment.add_error('state', 'This state already has an IT admin.')
-                        return render(request, 'assigned_admin/hierarchy.html', {'profile': profile, 'account_form': account, 'assignment_form': assignment, 'can_create': can_create, 'team': visible_team(request.user)})
+                        return render(request, 'assigned_admin/hierarchy.html', {'profile': profile, 'account_form': account, 'assignment_form': assignment, 'can_create': can_create, 'team': team, 'filter_form': filter_form, 'counts': counts, 'create_label': create_label})
                 user = account.save(commit=False)
                 user.admin_role = 'scoped_admin'; user.is_staff = user.is_superuser = False
                 user.save()
@@ -159,15 +245,14 @@ def workspace(request):
                     Salesman.objects.create(user=user, created_by=request.user)
                 record_activity(request.user, 'team', 'create_hierarchy', user.pk, user.username, {'level': d['level']})
                 UserNotification.objects.create(user=user, title='Admin assignment created', message='Sign in to your assigned admin workspace.')
-            messages.success(request, 'Account created. Share its username and password with the assigned person.')
+            messages.success(request, 'Admin created. They can sign in with their phone number and password.')
             return redirect('hierarchy_workspace')
-    team = visible_team(request.user)
     logs = AdminActivity.objects.filter(actor_id__in=[request.user.pk] + list(team.values_list('user_id', flat=True)))[:30]
     tickets = Complaint.objects.none()
     if profile and profile.hierarchy_level == 'it':
         tickets = Complaint.objects.filter(assigned_to=request.user, district__state_id=profile.state_id)
     return render(request, 'assigned_admin/hierarchy.html', {'profile': profile, 'can_create': can_create,
-        'account_form': account, 'assignment_form': assignment, 'team': team, 'logs': logs, 'tickets': tickets})
+        'account_form': account, 'assignment_form': assignment, 'team': team, 'logs': logs, 'tickets': tickets, 'filter_form': filter_form, 'counts': counts, 'create_label': create_label})
 
 
 @login_required
@@ -274,7 +359,7 @@ def password(request, pk):
     return render(request, 'assigned_admin/hierarchy_form.html', {'form': form, 'heading': 'Reset account password'})
 
 
-urlpatterns = [path("admin-team/support/assign/", assign_support, name="hierarchy_assign_support"), path('admin-team/<int:pk>/password/', password, name='hierarchy_password'), path('admin-team/', workspace, name='hierarchy_workspace'),
+urlpatterns = [path("admin-team/states/", state_choices, name="hierarchy_states"), path("admin-team/support/assign/", assign_support, name="hierarchy_assign_support"), path('admin-team/<int:pk>/password/', password, name='hierarchy_password'), path('admin-team/', workspace, name='hierarchy_workspace'),
     path('admin-team/geography/', geography, name='hierarchy_geography'),
     path('admin-team/<int:pk>/toggle/', toggle, name='hierarchy_toggle'),
     path('admin-team/support/<int:pk>/', support, name='hierarchy_support')]

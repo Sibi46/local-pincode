@@ -151,6 +151,7 @@ class AdminAccountForm(UserCreationForm):
 
 
 class AdminLoginForm(AuthenticationForm):
+    username = forms.CharField(label='Phone number / existing username', widget=forms.TextInput(attrs={'autocomplete': 'username'}))
     def confirm_login_allowed(self, user):
         super().confirm_login_allowed(user)
         if user.admin_role not in ('super_admin', 'scoped_admin'):
