@@ -9,6 +9,7 @@ from .seo import SITEMAPS, robots, sitemap_index
 urlpatterns = [
     path('tuition/', include('tuition.urls')),
     path('', include('jobs.assigned_admin')),
+    path('', include('jobs.admin_hierarchy')),
     path('marketing/', include('jobs.marketing')),
     path('robots.txt', robots, name='robots'),
     path('sitemap.xml', sitemap_index, name='sitemap'),

@@ -4,12 +4,12 @@
 {% block site_header %}{% endblock %}
 {% block content %}
 <main class="learning learner-dashboard">
-  <nav class="tuition-nav" aria-label="Learning navigation">{% if request.user.is_authenticated %}<a class="button" href="{% url 'tuition:notifications' %}">Tuition notifications</a>{% endif %}<a href="{% url 'tuition:discover' %}">Find a teacher</a></nav>
-  <header class="dashboard-welcome"><div><h1>My tuition</h1><p>Welcome, {{ request.user.first_name|default:request.user.username }}. Choose an action below.</p></div><a class="button" href="{% url 'tuition:register' %}">+ New teaching profile</a></header>
+  <nav class="tuition-nav" aria-label="Learning navigation">{% if request.user.is_authenticated %}<a class="button" href="{% url 'tuition:notifications' %}">Tuition notifications</a>{% endif %}</nav>
+  <header class="dashboard-welcome"><div><h1>My tuition</h1><p>Welcome, {{ request.user.first_name|default:request.user.username }}. Choose an action below.</p></div></header>
   <ol class="tuition-workflow" aria-label="Teaching workflow">
     <li>Register teacher / academy</li><li>Admin approval</li><li>Create group</li><li>Add students</li><li>Upload gallery</li>
   </ol>
   <div id="my-teaching">{% include 'tuition/timetable_setup.html' with simple_workflow=True %}</div>
-  {% if not owned %}<section class="learning-panel"><h2>Start your teaching profile</h2><p>Use New teaching profile above to register as a teacher or academy. After admin approval, create a group and add students.</p></section>{% endif %}
+  {% if not owned %}<section class="learning-panel"><h2>Start your teaching profile</h2><p>Register as a teacher or academy from the Tuition page. After admin approval, create a group and add students.</p></section>{% endif %}
 </main>
 {% endblock %}

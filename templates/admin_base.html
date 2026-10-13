@@ -59,12 +59,13 @@
 
   <!-- ── SIDEBAR ── -->
   <aside class="ap-sidebar" id="apSidebar">
+    {% if request.user.admin_role != 'super_admin' %}
     <div class="ap-sidebar-header">
       {% if request.user.admin_role == 'super_admin' %}
         <div class="ap-role-pill super"><i class="fas fa-crown"></i> Super Admin</div>
         <p>National Level</p>
       {% elif request.user.admin_role == 'scoped_admin' %}
-        <div class="ap-role-pill state">Assigned Admin</div>
+        <div class="ap-role-pill state">{% if request.user.admin_profile.hierarchy_level %}{{ request.user.admin_profile.get_hierarchy_level_display }}{% else %}Assigned Admin{% endif %}</div>
         <p>{% if request.user.admin_profile.all_states %}All states{% else %}{{ request.user.admin_profile.state.name }}{% endif %}</p>
       {% elif request.user.admin_role == 'state_admin' %}
         <div class="ap-role-pill state"><i class="fas fa-map"></i> State Admin</div>
@@ -75,19 +76,13 @@
       {% endif %}
     </div>
 
+    {% endif %}
     <nav class="ap-nav">
 
       {% if request.user.admin_role == 'super_admin' %}
+      <a href="{% url 'hierarchy_workspace' %}" class="ap-nav-link"><i class="fas fa-users"></i> Admin hierarchy</a>
 
-      <div class="ap-nav-section">Overview</div>
-      <a href="{% url 'manage_assigned_admins' %}" class="ap-nav-link"><i class="fas fa-user-shield" aria-hidden="true"></i> Admin Team</a>
-      <a href="{% url 'admin_activity' %}" class="ap-nav-link"><i class="fas fa-history" aria-hidden="true"></i> Admin Activity</a>
-      <a href="/super-admin/" class="ap-nav-link {% if request.path == '/super-admin/' %}active{% endif %}">
-        <i class="fas fa-tachometer-alt"></i> Dashboard
-      </a>
-      <a href="/super-admin/analytics/" class="ap-nav-link">
-        <i class="fas fa-chart-bar"></i> Analytics
-      </a>
+
 
       <div class="ap-nav-section">Tuition &amp; Learning</div>
       <a href="{% url 'tuition:admin_hub' %}" class="ap-nav-link"><i class="fas fa-graduation-cap" aria-hidden="true"></i> Manage Tuition</a>
@@ -246,7 +241,7 @@
       <div class="ap-nav-section">Assigned access</div>
       <a href="{% url 'assigned_dashboard' %}" class="ap-nav-link"><i class="fas fa-th-large" aria-hidden="true"></i> My workspace</a>
       {% for item in section_nav %}<a href="{% url 'assigned_section' item.key %}" class="ap-nav-link {% if section == item.key %}active{% endif %}">{{ item.name }}</a>{% endfor %}
-      <p style="padding:14px;color:#64748b;font-size:12px;line-height:1.6">Your workspace shows the sections and state assigned by the Main Super Admin.</p>
+      <p style="padding:14px;color:#64748b;font-size:12px;line-height:1.6">{% if request.user.admin_profile.hierarchy_level %}Manage your assigned team and location. Access follows your parent admin assignment.{% else %}Your workspace shows the sections and state assigned by the Main Super Admin.{% endif %}</p>
       {% elif request.user.admin_role == 'state_admin' %}
 
       <div class="ap-nav-section">Overview</div>
