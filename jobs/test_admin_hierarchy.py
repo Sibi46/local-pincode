@@ -9,7 +9,7 @@ class HierarchyTests(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.root = User.objects.create_user('rootadmin', admin_role='super_admin')
-        cls.country = Country.objects.create(name='India', code='IN')
+        cls.country, _ = Country.objects.get_or_create(name='India', code='IN')
         cls.state = State.objects.create(name='Tamil Nadu', code='TN', country=cls.country)
         cls.other = State.objects.create(name='Delhi', code='DL', country=cls.country)
         cls.district = District.objects.create(name='Chennai', state=cls.state)
@@ -162,3 +162,22 @@ class HierarchyTests(TestCase):
         response = self.client.post(reverse('hierarchy_workspace') + '?create=it', {'level':'it', 'country':self.country.pk, 'state':self.state.pk, 'phone':'9000000066', 'password':'Long-Secure-pass-789!'})
         self.assertEqual(response.status_code, 302)
         self.assertEqual(User.objects.get(phone='9000000066').admin_profile.hierarchy_level, 'it')
+
+    def test_country_backfill_preserves_existing_locations(self):
+        from importlib import import_module
+        from django.apps import apps
+        from django.db import connection
+        from types import SimpleNamespace
+        migration = import_module('jobs.migrations.0056_link_existing_indian_states')
+        known = State.objects.create(name='Kerala', code='KL')
+        unknown = State.objects.create(name='Custom area', code='CUS')
+        country = Country.objects.create(name='Other country', code='ZZ')
+        existing = State.objects.create(name='Karnataka', code='KA', country=country)
+        migration.link_indian_states(apps, SimpleNamespace(connection=connection))
+        migration.link_indian_states(apps, SimpleNamespace(connection=connection))
+        known.refresh_from_db(); unknown.refresh_from_db(); existing.refresh_from_db()
+        self.assertEqual(known.country, self.country)
+        self.assertIsNone(unknown.country)
+        self.assertEqual(existing.country, country)
+        self.assertEqual(Country.objects.filter(code='IN').count(), 1)
+        self.assertEqual(self.area.district_id, self.district.pk)

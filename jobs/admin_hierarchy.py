@@ -233,7 +233,7 @@ def workspace(request):
                     State.objects.select_for_update().get(pk=d['state'].pk)
                     if AdminProfile.objects.filter(hierarchy_level='it', state=d['state']).exists():
                         assignment.add_error('state', 'This state already has an IT admin.')
-                        return render(request, 'assigned_admin/hierarchy.html', {'profile': profile, 'account_form': account, 'assignment_form': assignment, 'can_create': can_create, 'team': team, 'filter_form': filter_form, 'counts': counts, 'create_label': create_label})
+                        return render(request, 'assigned_admin/hierarchy.html', {'profile': profile, 'account_form': account, 'assignment_form': assignment, 'can_create': can_create, 'team': team, 'filter_form': filter_form, 'counts': counts, 'create_label': create_label, 'unmapped_states': State.objects.filter(country__isnull=True).exclude(code='UNASN').count() if profile is None else 0})
                 user = account.save(commit=False)
                 user.admin_role = 'scoped_admin'; user.is_staff = user.is_superuser = False
                 user.save()
@@ -252,7 +252,7 @@ def workspace(request):
     if profile and profile.hierarchy_level == 'it':
         tickets = Complaint.objects.filter(assigned_to=request.user, district__state_id=profile.state_id)
     return render(request, 'assigned_admin/hierarchy.html', {'profile': profile, 'can_create': can_create,
-        'account_form': account, 'assignment_form': assignment, 'team': team, 'logs': logs, 'tickets': tickets, 'filter_form': filter_form, 'counts': counts, 'create_label': create_label})
+        'account_form': account, 'assignment_form': assignment, 'team': team, 'logs': logs, 'tickets': tickets, 'filter_form': filter_form, 'counts': counts, 'create_label': create_label, 'unmapped_states': State.objects.filter(country__isnull=True).exclude(code='UNASN').count() if profile is None else 0})
 
 
 @login_required

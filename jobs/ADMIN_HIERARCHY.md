@@ -34,3 +34,10 @@ Django system check passed; makemigrations --check --dry-run reported no changes
 No production migration, push or deployment performed.
 
 Phone-login and hierarchy-filter update: 38 tests passed across the same two suites; Django checks, migration drift check and node --check static/js/admin-hierarchy.js passed. No new schema change. Browser/device interaction has not been manually verified.
+
+Country dropdown repair: migration 0056 creates India if its code/name do not conflict
+and links only recognized existing Indian state names with no country assignment.
+Existing country assignments, unknown states, districts and PIN codes are preserved.
+The reverse operation intentionally leaves reference data intact. seed_states now
+links newly created states to an existing India record. Missing districts/PIN codes
+are never fabricated; import or explicitly map the existing geography where needed.

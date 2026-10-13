@@ -2,7 +2,7 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.db.models import Q
 
-from jobs.models import State
+from jobs.models import Country, State
 
 
 # State/UT names: https://knowindia.india.gov.in/states-uts/
@@ -28,11 +28,12 @@ class Command(BaseCommand):
 
     @transaction.atomic
     def handle(self, *args, **options):
+        india = Country.objects.filter(code__iexact='IN', name__iexact='India').first()
         created = 0
         for code, name in STATES:
             # Preserve IDs, alternative codes, inactive states and existing assignments.
             if State.objects.filter(Q(code__iexact=code) | Q(name__iexact=name)).exists():
                 continue
-            State.objects.create(code=code, name=name, is_active=True)
+            State.objects.create(code=code, name=name, is_active=True, country=india)
             created += 1
         self.stdout.write(self.style.SUCCESS(f'Added {created} states/union territories. Existing records unchanged.'))
