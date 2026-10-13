@@ -181,3 +181,29 @@ class HierarchyTests(TestCase):
         self.assertEqual(existing.country, country)
         self.assertEqual(Country.objects.filter(code='IN').count(), 1)
         self.assertEqual(self.area.district_id, self.district.pk)
+
+    def test_world_countries_available_and_seed_preserves_records(self):
+        from importlib import import_module
+        from django.apps import apps
+        from django.db import connection
+        from types import SimpleNamespace
+        migration = import_module('jobs.migrations.0057_seed_world_countries')
+        self.assertEqual(len(migration.COUNTRIES), 249)
+        self.assertEqual(Country.objects.filter(code__in=['US', 'GB', 'AE', 'IN', 'SG']).count(), 5)
+        usa = Country.objects.get(code='US')
+        usa.name = 'Custom USA label'
+        usa.is_active = False
+        usa.save()
+        before = Country.objects.count()
+        migration.seed_countries(apps, SimpleNamespace(connection=connection))
+        usa.refresh_from_db()
+        self.assertEqual(Country.objects.count(), before)
+        self.assertEqual(usa.name, 'Custom USA label')
+        self.assertFalse(usa.is_active)
+        self.state.refresh_from_db()
+        self.assertEqual(self.state.country_id, self.country.pk)
+        form = AssignmentForm(actor=self.root)
+        self.assertTrue(form.fields['country'].queryset.filter(code='SG').exists())
+        self.assertFalse(form.fields['country'].queryset.filter(code='US').exists())
+        self.client.force_login(self.root)
+        self.assertContains(self.client.get(reverse('hierarchy_workspace')), 'Singapore')

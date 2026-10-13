@@ -41,3 +41,57 @@ Existing country assignments, unknown states, districts and PIN codes are preser
 The reverse operation intentionally leaves reference data intact. seed_states now
 links newly created states to an existing India record. Missing districts/PIN codes
 are never fabricated; import or explicitly map the existing geography where needed.
+
+World country list: migration 0057 adds missing ISO 3166-1 entries (249 countries
+and territories) from the frozen pycountry/iso-codes dataset, alphabetically displayed.
+No runtime package or network request. Existing names, IDs, inactive countries and
+state assignments are retained; code/name conflicts are skipped rather than overwritten.
+This does not import overseas states, districts or postal codes. They require separately
+configured geography. Reverse migration leaves reference records intact.
+
+## Worldwide states and districts
+
+Migration 0058 adds nullable unique GeoNames IDs to State and District and widens
+State.code from 5 to 16 characters. Existing names, keys, PIN codes and admin
+assignments remain unchanged. Global names that collide with the existing globally
+unique State.name receive a source-code suffix (for example Central (UG.C)).
+Names already present in the same parent are reused only when unambiguous; no fuzzy
+or cross-country matching. Inactive records are not reactivated.
+
+The bundled GeoNames snapshot and attribution are in jobs/data/geonames/README.md.
+No external service or Python package is needed at runtime. Country/State/District
+selectors already read these existing models, so imported locations become available
+without a separate API or duplicate geography models.
+
+After approved deployment and a verified database backup:
+
+```bash
+.venv/bin/python manage.py migrate --noinput
+# Read-only database preview; inspect skipped_counts and missing-country lists.
+.venv/bin/python manage.py import_world_geography
+# Explicit database write, atomic and repeatable; no deletions or reparenting.
+.venv/bin/python manage.py import_world_geography --apply
+```
+
+Optional --report /chosen/path.json writes detailed skipped source codes to that file.
+The import is a separate command, not an automatic bulk data migration. Take a fresh
+backup before applying it. On an error, its database transaction rolls back; rerun
+only after resolving the reported conflict. Do not reverse geography migrations to
+roll back application code: retain added reference data and compatible schema.
+
+Coverage is limited to GeoNames administrative levels 1 and 2. Some countries use
+provinces/counties/regions instead of states/districts. Missing parents, unsupported
+country codes (including non-ISO codes) and ambiguous matches are reported and skipped.
+A country without source subdivisions remains selectable but has no fabricated
+children. Overseas postal-code support is not part of this import; creating Area
+Admins still requires an existing compatible PIN-code record.
+
+Validation 2026-10-13: 49 SQLite tests passed (world geography, hierarchy, legacy
+assigned-admin and seed-state suites), including the full snapshot import, repeat
+import, read-only preview, existing PIN/status preservation and rollback on error.
+Django checks and migration drift checks passed. Test snapshot coverage: 3,858
+supported state-level and 47,604 district-level records; 7 unsupported-country state
+rows and 38 missing-parent district rows reported. 22 ISO territories/countries have
+no state rows and 61 no supported district rows in this snapshot. No guarantee of
+complete or current worldwide administrative boundaries. MySQL bulk import and
+production/device verification have not been performed for this update.

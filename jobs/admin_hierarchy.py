@@ -143,7 +143,7 @@ def team_overview(request):
 
 class AssignmentForm(forms.Form):
     level = forms.ChoiceField(label='Role')
-    country = forms.ModelChoiceField(queryset=Country.objects.filter(is_active=True), required=False)
+    country = forms.ModelChoiceField(queryset=Country.objects.filter(is_active=True).order_by('name'), required=False)
     state = forms.ModelChoiceField(queryset=State.objects.filter(is_active=True), required=False)
     district = forms.ModelChoiceField(queryset=District.objects.filter(is_active=True), required=False)
     area = forms.ModelChoiceField(queryset=PinCode.objects.filter(is_active=True), required=False, label='Area / PIN code')
@@ -273,7 +273,7 @@ def toggle(request, pk):
 class GeographyForm(forms.Form):
     country_name = forms.CharField(max_length=100, required=False)
     country_code = forms.RegexField(r'^[A-Za-z]{2}$', max_length=2, required=False, help_text='Two-letter country code')
-    country = forms.ModelChoiceField(queryset=Country.objects.filter(is_active=True), required=False)
+    country = forms.ModelChoiceField(queryset=Country.objects.filter(is_active=True).order_by('name'), required=False)
     states = forms.ModelMultipleChoiceField(queryset=State.objects.filter(country__isnull=True).exclude(code='UNASN'), required=False)
 
 

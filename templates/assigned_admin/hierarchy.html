@@ -6,6 +6,7 @@
 <p>Super Admin &rarr; Country &rarr; State &rarr; District &rarr; Area &rarr; Salesman</p>
 {% if not profile %}<p><a href="{% url 'hierarchy_geography' %}">Set up countries and assign existing states</a>. <a href="{% url 'hierarchy_workspace' %}">Create Country Admin</a> &middot; <a href="?create=it#create-admin">Create State IT Admin</a>. <a href="{% url 'hierarchy_assign_support' %}">Assign IT support requests</a></p>{% endif %}
 {% if not profile and unmapped_states %}<p class="team-note">{{ unmapped_states }} state(s) still need a country assignment. <a href="{% url 'hierarchy_geography' %}">Map these states</a> to make them available in the filters.</p>{% endif %}
+<p class="team-muted">Global administrative locations: <a href="https://www.geonames.org/">GeoNames</a> (<a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>). States may be provinces or regions; districts may be counties or other second-level divisions.</p>
 <p>Choose a country to see its states, then a state to see its districts and a district to see its PIN codes.</p>
 <p>Account login: <a href="{% url 'assigned_login' %}">Admin sign in</a></p>
 {% if profile.hierarchy_level == 'salesman' %}<section class="team-card"><h2>Your assigned area</h2><p>PIN code: {{ profile.area.code }}. Your Area Admin manages this assignment.</p></section>{% endif %}

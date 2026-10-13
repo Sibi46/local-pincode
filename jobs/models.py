@@ -619,8 +619,9 @@ class Country(models.Model):
 
 class State(models.Model):
     country = models.ForeignKey(Country, null=True, blank=True, on_delete=models.PROTECT, related_name="states")
+    geonames_id = models.PositiveBigIntegerField(null=True, blank=True, unique=True, editable=False)
     name      = models.CharField(max_length=100, unique=True)
-    code      = models.CharField(max_length=5, unique=True)
+    code      = models.CharField(max_length=16, unique=True)
     is_active = models.BooleanField(default=True)
     created_at= models.DateTimeField(auto_now_add=True)
     created_by= models.ForeignKey('User', null=True, blank=True, on_delete=models.SET_NULL, related_name='created_states')
@@ -640,6 +641,7 @@ class State(models.Model):
 
 class District(models.Model):
     state     = models.ForeignKey(State, on_delete=models.CASCADE, related_name='districts')
+    geonames_id = models.PositiveBigIntegerField(null=True, blank=True, unique=True, editable=False)
     name      = models.CharField(max_length=100)
     is_active = models.BooleanField(default=True)
     created_at= models.DateTimeField(auto_now_add=True)
