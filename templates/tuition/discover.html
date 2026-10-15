@@ -1,13 +1,14 @@
 {% extends 'base.html' %}{% load static %}
+{% block site_header %}{% endblock %}
 {% block title %}Find a teacher · OURPINCODE{% endblock %}
 {% block extra_css %}<link rel="stylesheet" href="{% static 'tuition/learning.css' %}"><link rel="stylesheet" href="{% static 'tuition/discover.css' %}?v=branding-2">{% endblock %}
 {% block content %}
 <main class="learning tuition-discovery">
   <nav class="discovery-nav" aria-label="Learning navigation">
     <a class="discovery-brand" href="{% url 'tuition:discover' %}"><span aria-hidden="true">✦</span> Tuition &amp; learning</a>
-    <div><a href="{% url 'tuition:dashboard' %}">My learning</a><a href="{% url 'tuition:register' %}">Teach with us <span aria-hidden="true">↗</span></a></div>
+    <div><a href="{% url 'tuition:dashboard' %}">My learning</a>{% if not has_teaching_profile %}<a href="{% url 'tuition:register' %}">Teach with us <span aria-hidden="true">↗</span></a>{% endif %}</div>
   </nav>
-  <aside class="teacher-invite"><div><p class="eyebrow">SHARE WHAT YOU KNOW</p><h2>Your neighbourhood needs your skills.</h2><p>Create a teaching profile and help more learners find you.</p></div><a href="{% url 'tuition:register' %}">Become a teacher <span aria-hidden="true">↗</span></a></aside>
+  {% if not has_teaching_profile %}<aside class="teacher-invite"><div><p class="eyebrow">SHARE WHAT YOU KNOW</p><h2>Your neighbourhood needs your skills.</h2><p>Create a teaching profile and help more learners find you.</p></div><a href="{% url 'tuition:register' %}">Become a teacher <span aria-hidden="true">↗</span></a></aside>{% endif %}
   <section class="discovery-hero" aria-labelledby="discovery-title">
     <div><p class="eyebrow">BIG DREAMS. LOCAL TEACHERS.</p><h1 id="discovery-title">A little closer.<br><span>A lot to learn.</span></h1><p>Find a teacher for school subjects, music and new skills. Start with your neighbourhood.</p><div class="hero-tags"><span>School subjects</span><span>Music &amp; arts</span><span>New skills</span></div></div>
     <div class="learning-illustration" aria-hidden="true"><div class="illustration-orbit"></div><div class="subject-tile tile-maths"><span>01 / DISCOVER</span><strong>Aa</strong><small>Make room for curiosity</small></div><div class="subject-tile tile-music"><strong>♫</strong><small>Find your rhythm</small></div><div class="subject-tile tile-skills"><strong>π + ∞</strong><small>Grow at your own pace</small></div><span class="illustration-spark">✳</span></div>

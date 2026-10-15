@@ -373,7 +373,7 @@ a{text-decoration:none;color:inherit}
 <!-- MOBILE MENU -->
 <div class="mob-menu" id="mobMenu">
   <a href="{% url 'newsdesk:feed' %}"><i class="fas fa-newspaper"></i> News Desk</a>
-  <a href="{% url 'network_feed' %}"><i class="fas fa-user-friends"></i> Network</a>
+  <a href="{% url 'network_feed' %}"><i class="fas fa-user-friends"></i> My Ask</a>
   <a href="/"><i class="fas fa-home"></i> Home</a>
   <a href="/portal/"><i class="fas fa-users"></i> Community</a>
   <a href="/campus/"><i class="fas fa-graduation-cap"></i> Campus</a>
@@ -508,21 +508,19 @@ var heroAd2Cur = 0;
 </script>
 {% endif %}
 
-{% include 'home/gallery.html' %}
 
 <!-- BUSINESS LOGO STRIP -->
-{% if business_logos %}
 <div style="max-width:640px;margin:18px auto 0;padding:0 16px">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-    <div style="font-size:13px;font-weight:800;color:#111">🏪 Businesses Near You</div>
-    <a href="{% url 'business_list' %}" style="font-size:11px;color:#0a66c2;font-weight:700">See All</a>
+    <div style="font-size:13px;font-weight:800;color:#111">🏪 {% if business_pincode %}Businesses in {{ business_pincode }}{% else %}Discover businesses{% endif %}</div>
+    <a href="{% url 'business_list' %}{% if business_pincode %}?pincode={{ business_pincode|urlencode }}{% endif %}" style="font-size:11px;color:#0a66c2;font-weight:700">All businesses near you</a>
   </div>
   <div style="display:flex;gap:14px;overflow-x:auto;padding-bottom:6px;scrollbar-width:none">
     {% for biz in business_logos %}
-    <a href="/business/{{ biz.company_id }}/" style="display:flex;flex-direction:column;align-items:center;gap:6px;text-decoration:none;flex-shrink:0;width:64px">
+    <a href="/business/{{ biz.company_id }}/" aria-label="View {{ biz.company_name }}" title="{{ biz.company_name }}" style="display:flex;flex-direction:column;align-items:center;gap:6px;text-decoration:none;flex-shrink:0;width:64px">
       <div style="width:60px;height:60px;border-radius:16px;overflow:hidden;border:2px solid #e5e7eb;background:#f1f5f9;box-shadow:0 2px 8px rgba(0,0,0,.1)">
         {% with ln=biz.logo.name|lower %}
-        {% if '.mp4' in ln or '.mov' in ln or '.webm' in ln %}
+        {% if not biz.logo or '.mp4' in ln or '.mov' in ln or '.webm' in ln %}
           <div style="width:100%;height:100%;background:linear-gradient(135deg,#0a66c2,#1d4ed8);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;color:#fff">{{ biz.company_name|first|upper }}</div>
         {% else %}
           <img src="{{ biz.logo.url }}" alt="{{ biz.company_name }}"
@@ -533,10 +531,12 @@ var heroAd2Cur = 0;
       </div>
       <div style="font-size:10px;font-weight:700;color:#374151;text-align:center;line-height:1.2;max-width:64px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ biz.company_name|truncatechars:10 }}</div>
     </a>
-    {% endfor %}
+    {% empty %}<p style="font-size:13px;color:#64748b">No businesses found in this PIN code. <a href="{% url 'business_list' %}">Browse all businesses</a></p>{% endfor %}
   </div>
 </div>
-{% endif %}
+
+
+{% include 'home/gallery.html' %}
 
 <!-- SPIN TO WIN (if active) -->
 {% if spin_gift %}

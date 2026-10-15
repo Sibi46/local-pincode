@@ -109,7 +109,8 @@ def discover(request):
             asset = getattr(teacher, field)
             visible = asset and asset.teacher_id == teacher.pk and asset.mime.startswith('image/') and public_allowed(asset)
             setattr(teacher, 'public_' + field, asset if visible else None)
-    return page(request, 'Find a teacher', template='tuition/discover.html', search=form, teachers=results)
+    return page(request, 'Find a teacher', template='tuition/discover.html', search=form, teachers=results,
+        has_teaching_profile=request.user.is_authenticated and m.TeacherProfile.objects.filter(owner=request.user).exists())
 
 
 def public_profile(request, slug):
