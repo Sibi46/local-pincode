@@ -167,16 +167,16 @@ def home(request):
 
     # ── Business logo strip ─────────────────────────────────────────────────────
     from .models import CompanyProfile
-    business_logos = list(
-        CompanyProfile.objects.filter(logo__isnull=False).exclude(logo='')
-        .select_related('user').order_by('-user__date_joined')[:30]
-    )
-    _random.shuffle(business_logos)
-    business_logos = business_logos[:20]
+    business_pincode = request.user.pincode if request.user.is_authenticated else ''
+    directory = CompanyProfile.objects.filter(user__is_active=True).exclude(company_name='').select_related('user')
+    if business_pincode:
+        directory = directory.filter(user__pincode=business_pincode)
+    business_logos = list(directory.order_by('company_name')[:20])
 
     return render(request, 'index.html', {
         'featured_jobs':       featured_jobs,
         'business_logos':      business_logos,
+        'business_pincode': business_pincode,
         'homepage_banners':    homepage_banners,
         'featured_employers':  featured_employers,
         'featured_job_ads':    featured_job_ads,
@@ -1075,7 +1075,10 @@ def employer_dashboard(request):
         'batch__salesman__user').order_by('-number')
     coupon_page = Paginator(business_coupons, 25).get_page(request.GET.get('coupon_page'))
 
+    from .dashboard_features import registered_features
+    active_features, pending_features = registered_features(user)
     return render(request, 'employer_dashboard.html', {
+        'active_features': active_features, 'pending_features': pending_features,
         'registered_businesses': CompanyProfile.objects.filter(user__is_active=True).exclude(
             company_name='').select_related('user').order_by('-pk')[:20],
         'business_coupons': coupon_page,

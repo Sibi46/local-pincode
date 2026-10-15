@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block register_business_button %}{% endblock %}
-{% block title %}Network — People in your pincode{% endblock %}
+{% block title %}My Ask — People in your pincode{% endblock %}
 {% block extra_css %}
 <style>
 .nw-card select{width:100%;padding:12px;border:1px solid #d8e4dd;border-radius:10px;background:#fbfdfb;color:#24463b;font:inherit;font-size:13px}.nw-card select:focus{outline:2px solid #319d7d;outline-offset:2px}
@@ -13,13 +13,13 @@ body{background:#f5f8f7}.network{max-width:1080px;margin:auto;padding:32px 24px 
 {% endblock %}
 {% block content %}
 <main class="network">
-  <header class="nw-head"><div><div class="nw-kicker">👋 Network</div><h1>Your pincode. Your people.</h1><p>A game, a walk, a conversation. Make a plan with someone nearby.</p></div>{% if pincode %}<div class="nw-head-actions"><span class="nw-pin">📍 {{ pincode }}</span><button type="button" class="nw-add" data-compose-open aria-label="Post to your network" aria-haspopup="dialog" title="Post to your network">+</button></div>{% endif %}</header>
+  <header class="nw-head"><div><div class="nw-kicker">👋 My Ask</div><h1>Your pincode. Your people.</h1><p>A game, a walk, a conversation. Make a plan with someone nearby.</p></div>{% if pincode %}<div class="nw-head-actions"><span class="nw-pin">📍 {{ pincode }}</span><button type="button" class="nw-add" data-compose-open aria-label="Post to My Ask" aria-haspopup="dialog" title="Post to My Ask">+</button></div>{% endif %}</header>
   {% if not pincode %}
   <section class="nw-card nw-empty"><div class="nw-empty-icon">📍</div><h2>Start with your pincode</h2><p>Add your six-digit pincode to your profile to see and connect with people in your area.</p><a class="nw-btn" href="{% url 'profile_edit' %}" style="margin-top:20px">Update my profile</a></section>
   {% else %}
   <div class="nw-grid">
     <dialog id="network-compose" class="nw-dialog" aria-labelledby="network-compose-title">
-      <section class="nw-card"><div class="nw-compose-head"><h2 id="network-compose-title">Post to your network</h2><button type="button" class="nw-dismiss" data-compose-close aria-label="Close post form">&times;</button></div><p class="nw-muted">Your invitation is shared only with registered users in {{ pincode }}.</p>
+      <section class="nw-card"><div class="nw-compose-head"><h2 id="network-compose-title">Post to My Ask</h2><button type="button" class="nw-dismiss" data-compose-close aria-label="Close post form">&times;</button></div><p class="nw-muted">Your invitation is shared only with registered users in {{ pincode }}.</p>
         <form method="post" action="{% url 'network_feed' %}" id="networkComposer">{% csrf_token %}
           <label for="networkCategory">{{ form.category.label }}</label>{{ form.category }}
           {% for error in form.category.errors %}<p class="nw-error" role="alert">{{ error }}</p>{% endfor %}

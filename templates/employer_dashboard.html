@@ -17,7 +17,8 @@
     .prof-ind-pill.disabled{opacity:.4;cursor:not-allowed;pointer-events:none}
     .prof-ind-tag{display:inline-flex;align-items:center;gap:6px;background:#e8f0fe;border:1.5px solid #0a66c2;color:#0a66c2;border-radius:20px;padding:5px 12px;font-size:12px;font-weight:700}
     .prof-ind-tag button{background:none;border:none;cursor:pointer;color:#0a66c2;font-size:14px;line-height:1;padding:0}
-  </style>
+  .ig-features{margin:18px 0;padding:16px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px}.ig-features h2{font-size:14px;margin:0 0 10px}.ig-features h3{font-size:12px;color:#92400e;margin:14px 0 8px}.ig-feature-links{display:flex;gap:8px;flex-wrap:wrap}.ig-feature-links a{padding:8px 12px;background:#fff;border:1px solid #dbe4ed;border-radius:8px;color:#0a66c2;font-size:12px;font-weight:700;text-decoration:none}
+</style>
   <style>
   /* ══ INSTAGRAM-STYLE DASHBOARD ══ */
   *{box-sizing:border-box}
@@ -226,6 +227,12 @@
       <button onclick="navigator.clipboard.writeText('{{ request.user.salesman_biz_id }}');this.textContent='✅';setTimeout(()=>this.textContent='📋',1500)" style="background:#1d4ed8;color:#fff;border:none;border-radius:8px;padding:7px 12px;font-size:16px;cursor:pointer;flex-shrink:0" title="Copy ID">📋</button>
     </div>
     {% endif %}
+
+    <section class="ig-features" aria-label="Registered services">
+      <h2>Active features</h2>
+      <div class="ig-feature-links">{% for feature in active_features %}<a href="{{ feature.url }}"{% if feature.url == '#my-profile' %} onclick="showSection('my-profile')"{% elif feature.url == '#coupons' %} onclick="showSection('coupons')"{% endif %}>{{ feature.label }}</a>{% empty %}<p>No active services yet.</p>{% endfor %}</div>
+      {% if pending_features %}<h3>Pending approval</h3><div class="ig-feature-links">{% for feature in pending_features %}<a href="{{ feature.url }}">{{ feature.label }}</a>{% endfor %}</div>{% endif %}
+    </section>
 
     <!-- STATS -->
     <div class="ig-stats">

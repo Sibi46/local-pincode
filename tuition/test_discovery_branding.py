@@ -32,3 +32,15 @@ class DiscoveryBrandingTests(TestCase):
         self.assertEqual(self.client.get(url).status_code, 200)
         self.client.force_login(self.other)
         self.assertEqual(self.client.get(url).status_code, 403)
+
+    def test_registered_teacher_or_academy_has_no_registration_prompt(self):
+        self.client.force_login(self.owner)
+        for kind, status in [('teacher','pending'), ('academy','approved'), ('teacher','suspended')]:
+            self.teacher.kind, self.teacher.status = kind, status
+            self.teacher.save()
+            response = self.client.get(reverse('tuition:discover'))
+            self.assertNotContains(response, 'Become a teacher')
+            self.assertNotContains(response, 'Teach with us')
+            self.assertNotContains(response, 'class="navbar"')
+        self.client.force_login(self.other)
+        self.assertContains(self.client.get(reverse('tuition:discover')), 'Become a teacher')
