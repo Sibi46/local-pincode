@@ -289,6 +289,12 @@ class GroupMemberForm(forms.Form):
         self.fields['subject'].help_text = 'Select a subject in the chosen group.'
 
 
+class StudentEntryForm(forms.Form):
+    phone = GroupMemberForm.base_fields['phone']
+    name = forms.CharField(max_length=150, label='Student name')
+    guardian_name = forms.CharField(max_length=150, required=False, label='Parent name')
+
+
 class StudentAccountForm(forms.Form):
     phone = forms.RegexField(r'^[0-9]{10}$', label='Phone number', max_length=10)
     name = forms.CharField(max_length=150, label='Parent / adult student name')

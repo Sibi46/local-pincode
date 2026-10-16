@@ -252,19 +252,23 @@ def group_students(request, uid=None, teacher_id=None):
     perm.own(request.user, teacher)
     if teacher.status != 'approved':
         raise PermissionDenied
-    form = f.GroupMemberForm(request.POST or None, batch=batch, teacher=teacher)
+    form = f.StudentEntryForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
         try:
-            selected = form.cleaned_data['group']
-            svc.add_named_student(request.user, selected, form.cleaned_data['name'], form.cleaned_data['phone'],
-                form.cleaned_data['subject'], form.cleaned_data['guardian_name'])
-            messages.success(request, 'Student added to ' + selected.name + '.')
-            return redirect('tuition:batch', uid=selected.uid)
+            data = form.cleaned_data
+            if batch:
+                svc.add_named_student(request.user, batch, data['name'], data['phone'],
+                    guardian_name=data['guardian_name'])
+                messages.success(request, 'Student added to ' + batch.name + '.')
+                return redirect('tuition:batch', uid=batch.uid)
+            svc.save_teacher_student(request.user, teacher, data['name'], data['phone'], data['guardian_name'])
+            messages.success(request, 'Student saved. You can now add this student from a group.')
+            return redirect('tuition:teacher_students', teacher_id=teacher.uid)
         except ValidationError as exc:
             form.add_error(None, exc)
-    group_subjects = {str(group.pk): [{'id': subject.pk, 'name': subject.name} for subject in group.lesson.subjects.all() if subject.active] for group in form.fields['group'].queryset}
     return page(request, 'Add student', template='tuition/group_students.html', form=form,
-        teacher=teacher, group_subjects=group_subjects)
+        teacher=teacher, batch=batch)
+
 
 
 @login_required
@@ -283,8 +287,7 @@ def student_phone_check(request, teacher_id):
         return JsonResponse({'error': 'Enter a 10-digit phone number.'}, status=400)
     registered = get_user_model().objects.filter(phone=phone, is_active=True).exists()
     # No account names or other teachers' private student/guardian information.
-    records = list(m.Learner.objects.filter(phone=phone, created_by=request.user,
-        enrolments__lesson__teacher=teacher).distinct().values('name', 'guardian_name')[:20]) if registered else []
+    records = list(m.Learner.objects.filter(phone=phone, created_by=request.user).distinct().values('name', 'guardian_name')[:20]) if registered else []
     response = JsonResponse({'registered': registered, 'students': records})
     response['Cache-Control'] = 'private, no-store'
     return response

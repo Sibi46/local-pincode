@@ -315,7 +315,27 @@ def review_guardian(user, link, status, verification):
 
 
 @transaction.atomic
-def add_named_student(user, batch, name, phone, subject, guardian_name=""):
+def save_teacher_student(user, teacher, name, phone, guardian_name=""):
+    from .models import Learner
+    from django.contrib.auth import get_user_model
+    import re
+    teacher = lock_teacher(user, teacher)
+    if teacher.status != 'approved':
+        raise PermissionDenied
+    if not re.fullmatch(r'[0-9]{10}', phone) or not get_user_model().objects.filter(phone=phone, is_active=True).exists():
+        raise ValidationError("This phone number is not registered to an active account.")
+    # Reuse only this owner's private records; phone never grants guardian access.
+    learner = Learner.objects.filter(created_by=user, phone=phone, name__iexact=name.strip(), guardian_name=guardian_name.strip()).order_by('pk').first()
+    if learner is None:
+        learner = Learner(name=name.strip(), phone=phone, guardian_name=guardian_name.strip(), created_by=user, pincode='')
+        learner.full_clean(exclude=['pincode'])
+        learner.save()
+        audit(user, learner, 'student_saved')
+    return learner
+
+
+@transaction.atomic
+def add_named_student(user, batch, name, phone, subject=None, guardian_name=""):
     from .models import Learner
     teacher = lock_teacher(user, batch.lesson.teacher)
     if teacher.status != 'approved':
@@ -332,15 +352,14 @@ def add_named_student(user, batch, name, phone, subject, guardian_name=""):
     import re
     if not re.fullmatch(r'[0-9]{10}', phone) or not get_user_model().objects.filter(phone=phone, is_active=True).exists():
         raise ValidationError("This phone number is not registered to an active account. Ask the student or parent to register first.")
-    if not lesson.subjects.filter(pk=subject.pk, active=True).exists():
+    if subject is not None and not lesson.subjects.filter(pk=subject.pk, active=True).exists():
         raise ValidationError('Choose a subject taught in this group.')
     if batch.memberships.filter(enrolment__status='active', enrolment__learner__phone=phone, enrolment__learner__name__iexact=name.strip()).exists():
         raise ValidationError('This student is already in this group.')
     # Registration is checked only; it never grants account or guardian access.
-    learner = Learner(name=name.strip(), phone=phone, guardian_name=guardian_name.strip(), created_by=user, pincode='')
-    learner.full_clean(exclude=['pincode'])
-    learner.save()
-    learner.interests.add(subject)
+    learner = save_teacher_student(user, teacher, name, phone, guardian_name)
+    if subject is not None:
+        learner.interests.add(subject)
     enrolment = Enrolment(learner=learner, lesson=lesson)
     enrolment.full_clean()
     enrolment.save()

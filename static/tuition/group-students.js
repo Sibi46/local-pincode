@@ -5,7 +5,6 @@
   const status = document.getElementById('phone-status'), register = document.getElementById('open-register');
   const dialog = document.getElementById('register-student'), registration = document.getElementById('register-student-form');
   const existing = document.getElementById('existing-students'), known = document.getElementById('known-student');
-  const subjects = JSON.parse(document.getElementById('group-subjects').textContent);
   let serial = 0, records = [];
   details.disabled = true;
   async function post(url, data) {
@@ -15,16 +14,7 @@
     if (!response.ok) throw new Error(result.error || Object.values(result.errors || {}).flat().map(e => e.message).join(' ') || 'Please try again.');
     return result;
   }
-  function selectGroup() {
-    const field = form.elements.subject, previous = field.value;
-    field.replaceChildren(new Option('Select subject', ''));
-    (subjects[form.elements.group.value] || []).forEach(item => field.add(new Option(item.name, item.id)));
-    if ([...field.options].some(o => o.value === previous)) field.value = previous;
-    else if (field.options.length === 2) field.selectedIndex = 1;
-  }
-  form.elements.group.addEventListener('change', selectGroup);
-  selectGroup();
-  phone.addEventListener('input', () => { ++serial; details.disabled = true; register.hidden = true; existing.hidden = true; status.textContent = ''; });
+  phone.addEventListener('input', () => { ++serial; details.disabled = true; register.hidden = true; existing.hidden = true; form.elements.name.value = ''; form.elements.guardian_name.value = ''; status.textContent = ''; });
   async function check() {
     const current = ++serial;
     details.disabled = true; register.hidden = true; existing.hidden = true;
@@ -36,7 +26,7 @@
       if (current !== serial) return;
       details.disabled = !result.registered;
       register.hidden = result.registered;
-      status.textContent = result.registered ? 'Registered. Enter student and parent details, then choose a group.' : 'This number is not registered to an active account. Select Register to continue.';
+      status.textContent = result.registered ? 'Registered. Confirm the student and parent names, then add student.' : 'This number is not registered to an active account. Select Register to continue.';
       records = result.students || [];
       known.replaceChildren(new Option('Enter a new student', ''));
       records.forEach((record, index) => known.add(new Option(record.name, index)));
