@@ -265,18 +265,49 @@ class GroupCreateForm(LessonForm):
 
 
 class GroupMemberForm(forms.Form):
-    name = forms.CharField(max_length=150, label='Student name',
-        widget=forms.TextInput(attrs={'placeholder': 'Enter student name', 'autocomplete': 'off'}))
-    phone = forms.RegexField(regex=r'^[0-9]{10}$', label='Registered student / parent phone',
-        help_text="For a child, enter the parent's registered phone number.",
+    phone = forms.RegexField(regex=r'^[0-9]{10}$', label='Student / parent phone number',
+        help_text="For a child, use the parent's registered phone number.",
         widget=forms.TextInput(attrs={'type': 'tel', 'inputmode': 'numeric', 'maxlength': '10'}))
+    name = forms.CharField(max_length=150, label='Student name')
+    guardian_name = forms.CharField(max_length=150, required=False, label='Parent name')
+    group = forms.ModelChoiceField(queryset=m.Batch.objects.none(), label='Group')
     subject = forms.ModelChoiceField(queryset=m.Subject.objects.none(), label='Subject')
 
-    def __init__(self, *args, batch, **kwargs):
+    def __init__(self, *args, batch=None, teacher=None, **kwargs):
+        teacher = teacher or batch.lesson.teacher
+        if args and args[0] is not None and batch and not args[0].get('group'):
+            data = args[0].copy(); data['group'] = batch.pk
+            args = (data, *args[1:])
         super().__init__(*args, **kwargs)
-        self.fields['subject'].queryset = batch.lesson.subjects.filter(active=True)
-        self.fields['subject'].help_text = 'Choose a subject taught in this group. Edit the group first if no subjects are listed.'
+        self.fields['group'].queryset = m.Batch.objects.filter(lesson__teacher=teacher, lesson__active=True, status='active').select_related('lesson').prefetch_related('lesson__subjects')
+        self.fields['group'].initial = batch
+        selected = self.data.get('group') if self.is_bound else (batch.pk if batch else None)
+        if str(selected).isdigit():
+            selected_group = self.fields['group'].queryset.filter(pk=selected).first()
+            if selected_group:
+                self.fields['subject'].queryset = selected_group.lesson.subjects.filter(active=True)
+        self.fields['subject'].help_text = 'Select a subject in the chosen group.'
 
+
+class StudentEntryForm(forms.Form):
+    phone = GroupMemberForm.base_fields['phone']
+    name = forms.CharField(max_length=150, label='Student name')
+    guardian_name = forms.CharField(max_length=150, required=False, label='Parent name')
+
+
+class StudentAccountForm(forms.Form):
+    phone = forms.RegexField(r'^[0-9]{10}$', label='Phone number', max_length=10)
+    name = forms.CharField(max_length=150, label='Parent / adult student name')
+    pincode = forms.RegexField(r'^[0-9]{6}$', max_length=6, label='Pincode')
+    otp = forms.RegexField(r'^[0-9]{6}$', max_length=6, label='OTP')
+
+    def clean_phone(self):
+        from django.contrib.auth import get_user_model
+        from django.db.models import Q
+        phone = self.cleaned_data['phone']
+        if get_user_model().objects.filter(Q(phone=phone) | Q(username__iexact=phone) | Q(business_phone=phone)).exists():
+            raise forms.ValidationError('This number already belongs to an account. Check it again.')
+        return phone
 
 
 class BatchForm(StyledForm):
