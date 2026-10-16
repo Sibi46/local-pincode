@@ -84,11 +84,15 @@ class NamedStudentTests(TestCase):
         cache.clear()
         self.client.force_login(self.owner)
         url = reverse('tuition:student_account_register', args=[self.teacher.uid])
-        data = {'phone':'9000000089','name':'New Parent','password1':'Secure-Parent-789!', 'password2':'Secure-Parent-789!'}
+        data = {'phone':'9000000089','name':'New Parent','pincode':'600001', 'otp':'123456'}
+        self.assertEqual(self.client.post(url, data).status_code, 400)
+        self.set_otp(data['phone'])
         self.assertEqual(self.client.post(url, data).status_code, 200)
         self.assertEqual(int(self.client.session['_auth_user_id']), self.owner.pk)
         user = get_user_model().objects.get(phone=data['phone'])
-        self.assertTrue(user.check_password(data['password1']))
+        self.assertFalse(user.has_usable_password())
+        self.assertEqual(user.pincode, '600001')
+        self.assertNotIn('tuition_registration_otp', self.client.session)
         self.assertFalse(user.is_staff)
         self.assertFalse(user.is_superuser)
         self.assertFalse(user.admin_role)
@@ -155,3 +159,44 @@ class NamedStudentTests(TestCase):
         self.assertFalse(m.Learner.objects.filter(name='No account').exists())
         self.client.force_login(self.other)
         self.assertEqual(self.client.post(url, self.data()).status_code, 403)
+
+    def set_otp(self, phone, expires=None, attempts=0):
+        import hashlib
+        from django.utils import timezone
+        session = self.client.session
+        session['tuition_registration_otp'] = {'phone':phone, 'teacher':str(self.teacher.uid),
+            'hash':hashlib.sha256(b'123456').hexdigest(),
+            'expires':expires if expires is not None else timezone.now().timestamp()+600, 'attempts':attempts}
+        session.save()
+
+    def test_registration_otp_expiry_binding_and_attempt_limit(self):
+        self.client.force_login(self.owner)
+        url = reverse('tuition:student_account_register', args=[self.teacher.uid])
+        data = {'phone':'9000000090','name':'Parent','pincode':'600001','otp':'123456'}
+        for phone, expires, attempts in [('9000000091',None,0), (data['phone'],0,0), (data['phone'],None,5)]:
+            self.set_otp(phone, expires, attempts)
+            self.assertEqual(self.client.post(url, data).status_code, 400)
+        self.set_otp(data['phone'])
+        self.assertEqual(self.client.post(url, {**data,'otp':'000000'}).status_code, 400)
+        self.assertEqual(self.client.session['tuition_registration_otp']['attempts'], 1)
+
+    def test_registration_sms_and_group_without_register_button(self):
+        from unittest.mock import patch, Mock
+        from django.test import override_settings
+        from django.core.cache import cache
+        cache.clear()
+        self.client.force_login(self.owner)
+        group_url = reverse('tuition:group_students', args=[self.batch.uid])
+        self.assertNotContains(self.client.get(group_url), 'id="open-register"')
+        self.assertNotContains(self.client.get(group_url), '<dialog')
+        self.assertContains(self.client.get(reverse('tuition:teacher_students', args=[self.teacher.uid])), 'id="open-register"')
+        url = reverse('tuition:student_account_otp', args=[self.teacher.uid])
+        with override_settings(TWO_FACTOR_API_KEY=''):
+            self.assertEqual(self.client.post(url, {'phone':'9000000092'}, content_type='application/json').status_code, 503)
+        with override_settings(TWO_FACTOR_API_KEY='test-only', TWO_FACTOR_OTP_TEMPLATE='test'):
+            with patch('requests.get', return_value=Mock(json=lambda: {'Status':'Success'})):
+                result = self.client.post(url, {'phone':'9000000092'}, content_type='application/json')
+                self.assertTrue(result.json()['success'])
+                self.assertEqual(self.client.session['tuition_registration_otp']['phone'], '9000000092')
+                self.assertNotIn('otp', self.client.session)
+                self.assertEqual(int(self.client.session['_auth_user_id']), self.owner.pk)

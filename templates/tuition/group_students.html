@@ -3,11 +3,20 @@
 {% block site_header %}{% endblock %}
 {% block extra_css %}<link rel="stylesheet" href="{% static 'tuition/learning.css' %}"><style>
 .student-entry{max-width:660px;margin:28px auto;padding:20px}.student-entry form{background:white;padding:24px;border:1px solid #dce5e1;border-radius:16px}.student-entry label{display:block;font-weight:700;margin:16px 0 6px}.student-entry input,.student-entry select{width:100%;box-sizing:border-box;padding:12px;border:1px solid #b9cac2;border-radius:8px;font:inherit}.student-entry button,.student-entry .button{margin-top:12px}.student-entry fieldset{border:0;padding:0;margin:0;min-width:0}.student-entry dialog{width:min(480px,90vw);box-sizing:border-box;border:0;border-radius:16px;padding:18px}.student-entry dialog::backdrop{background:#102d2566}.student-entry dialog form{padding:8px;border:0}.entry-status{margin:12px 0;color:#214e42}.errorlist{color:#b42318}
+
+.student-entry #register-student{border-top:4px solid #2449d8;border-radius:0 0 24px 24px;padding:24px;max-height:90vh;overflow:auto;background:#fff;color:#374151}
+#register-student h2{font-size:22px;margin:0 0 12px}#register-student label{font-size:15px}
+#register-student input{background:#f7f9ff;border:1px solid #d5e2ff;border-radius:16px;padding:16px}
+#register-student button{background:#2449df;color:white;border:0;border-radius:16px;padding:16px;font:inherit;font-weight:800;cursor:pointer}
+#register-student button:disabled{opacity:.55;cursor:wait}#register-student .mobile-row{display:flex;align-items:center;gap:10px}
+#register-student .mobile-row input{min-width:0;flex:1}#register-student .mobile-row button{margin:0;white-space:nowrap}
+#register-student .create-account{width:100%;margin-top:24px}#register-student #close-register{float:right;padding:6px 12px;background:#eef2ff;color:#2449df}
+#register-student .signin{text-align:center;color:#6b7280;font-size:14px}#register-student .signin a{color:#2449df;font-weight:700}
 </style>{% endblock %}
 {% block content %}<main class="learning student-entry"><a href="{% url 'tuition:teacher' teacher.uid %}">Back to {{ teacher.name }}</a><h1>Add student</h1>{% if batch %}<p>Add to {{ batch.name }}</p>{% endif %}
 <form method="post" id="add-student" data-check-url="{% url 'tuition:student_phone_check' teacher.uid %}">{% csrf_token %}{{ form.non_field_errors }}
 {{ form.phone.label_tag }}{{ form.phone }}{{ form.phone.errors }}<small>{{ form.phone.help_text }}</small>
-<button type="button" class="button" id="check-phone">Check number</button><p class="entry-status" id="phone-status" role="status" aria-live="polite"></p><a class="button" id="open-register" href="{% url 'register' %}" hidden>Register</a>
+<button type="button" class="button" id="check-phone">Check number</button><p class="entry-status" id="phone-status" role="status" aria-live="polite"></p>{% if not batch %}<button type="button" class="button" id="open-register" hidden>Register</button>{% endif %}
 <div id="existing-students" hidden><label for="known-student">Students already in your records</label><select id="known-student"><option value="">Enter a new student</option></select></div>
 <fieldset id="student-details">
 {{ form.name.label_tag }}{{ form.name }}{{ form.name.errors }}
@@ -15,5 +24,19 @@
 <button type="submit" class="button" id="add-student-submit">Add student</button></fieldset></form>
 
 
+
+{% if not batch %}<dialog id="register-student" aria-labelledby="registration-title">
+<button type="button" id="close-register" aria-label="Close registration">Close</button>
+<h2 id="registration-title">Create Account</h2>
+<form id="register-student-form" data-send-url="{% url 'tuition:student_account_otp' teacher.uid %}" data-create-url="{% url 'tuition:student_account_register' teacher.uid %}">
+<label for="register-name">Full Name *</label><input id="register-name" name="name" maxlength="150" placeholder="Enter your name" autocomplete="name" required>
+<label for="register-pincode">Pincode *</label><input id="register-pincode" name="pincode" pattern="[0-9]{6}" maxlength="6" inputmode="numeric" placeholder="6-digit pincode" required>
+<label for="register-phone">Mobile Number *</label><div class="mobile-row"><input id="register-phone" name="phone" pattern="[0-9]{10}" maxlength="10" inputmode="numeric" autocomplete="tel" placeholder="10-digit mobile" required><button type="button" id="send-student-otp">Send OTP</button></div>
+<div id="student-otp-field" hidden><label for="register-otp">OTP *</label><input id="register-otp" name="otp" pattern="[0-9]{6}" maxlength="6" inputmode="numeric" autocomplete="one-time-code" placeholder="6-digit OTP"></div>
+<p id="registration-status" role="status" aria-live="polite"></p>
+<button class="create-account" id="create-student-account" type="submit" disabled>Create Account &rarr;</button>
+<p class="signin">Already have an account? <a href="{% url 'login' %}">Sign In</a></p>
+<small>Use the parent or adult student's details. The teacher stays signed in. Set a password later using Forgot password.</small>
+</form></dialog>{% endif %}
 </main>{% endblock %}
-{% block extra_js %}<script src="{% static 'tuition/group-students.js' %}?v=20261016-3" defer></script>{% endblock %}
+{% block extra_js %}<script src="{% static 'tuition/group-students.js' %}?v=20261016-5" defer></script>{% endblock %}

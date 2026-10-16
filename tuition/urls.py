@@ -74,6 +74,7 @@ urlpatterns = [
     path('teacher/<uuid:uid>/groups/new/', v.group_create, name='group_create'),
     path('teacher/<uuid:teacher_id>/students/', v.group_students, name='teacher_students'),
     path('teacher/<uuid:teacher_id>/students/check/', v.student_phone_check, name='student_phone_check'),
+    path('teacher/<uuid:teacher_id>/students/otp/', v.student_account_otp, name='student_account_otp'),
     path('teacher/<uuid:teacher_id>/students/register/', v.student_account_register, name='student_account_register'),
     path('groups/<uuid:uid>/students/', v.group_students, name='group_students'),
     path('teacher/<uuid:uid>/edit/', v.register_teacher, name='teacher_edit'),

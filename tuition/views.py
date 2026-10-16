@@ -293,6 +293,42 @@ def student_phone_check(request, teacher_id):
     return response
 
 
+@login_required
+@require_POST
+def student_account_otp(request, teacher_id):
+    import json
+    import hashlib
+    from django.conf import settings
+    from django.http import JsonResponse
+    from jobs.views import send_otp, _rate_limit
+    teacher = teacher_for(request, teacher_id)
+    if teacher.status != 'approved': raise PermissionDenied
+    if not _rate_limit(f'tuition_sms:{request.user.pk}', 10, 600):
+        return JsonResponse({'error': 'Too many requests. Try again later.'}, status=429)
+    request.session.pop('tuition_registration_otp', None)
+    if not getattr(settings, 'TWO_FACTOR_API_KEY', ''):
+        return JsonResponse({'error': 'SMS registration is unavailable. Please try again later.'}, status=503)
+    try:
+        data = json.loads(request.body)
+        phone = data.get('phone', '').strip()
+        import re
+        if not re.fullmatch(r'[0-9]{10}', phone):
+            raise ValueError
+    except (ValueError, TypeError, AttributeError):
+        return JsonResponse({'error': 'Enter a valid 10-digit mobile number.'}, status=400)
+    response = send_otp(request)
+    result = json.loads(response.content)
+    if result.get('success') and request.session.get('otp_phone') == phone and request.session.get('otp'):
+        request.session['tuition_registration_otp'] = {
+            'phone': phone, 'teacher': str(teacher.uid),
+            'hash': hashlib.sha256(request.session['otp'].encode()).hexdigest(),
+            'expires': timezone.now().timestamp() + 600, 'attempts': 0}
+    for key in ('otp', 'otp_phone', 'otp_verified'):
+        request.session.pop(key, None)
+    response['Cache-Control'] = 'private, no-store'
+    return response
+
+
 @sensitive_post_parameters()
 @login_required
 @require_POST
@@ -308,6 +344,18 @@ def student_account_register(request, teacher_id):
     form = f.StudentAccountForm(request.POST)
     if not form.is_valid():
         return JsonResponse({'errors': form.errors.get_json_data()}, status=400)
+    import hashlib
+    import secrets
+    challenge = request.session.get('tuition_registration_otp', {})
+    d = form.cleaned_data
+    if (challenge.get('phone') != d['phone'] or challenge.get('teacher') != str(teacher.uid)
+            or challenge.get('expires', 0) <= timezone.now().timestamp() or challenge.get('attempts', 0) >= 5):
+        return JsonResponse({'error': 'Request a new OTP for this mobile number.'}, status=400)
+    challenge['attempts'] += 1
+    request.session['tuition_registration_otp'] = challenge
+    if not secrets.compare_digest(challenge.get('hash', ''), hashlib.sha256(d['otp'].encode()).hexdigest()):
+        return JsonResponse({'error': 'Incorrect OTP. Please try again.'}, status=400)
+    request.session.pop('tuition_registration_otp', None)
     try:
         with transaction.atomic():
             teacher = svc.lock_teacher(request.user, teacher)
@@ -315,7 +363,7 @@ def student_account_register(request, teacher_id):
             from jobs.utils import generate_referral_code
             d = form.cleaned_data
             account = get_user_model().objects.create_user(username=d['phone'], phone=d['phone'],
-                first_name=d['name'], password=d['password1'], user_type='individual', referral_code=generate_referral_code())
+                first_name=d['name'], pincode=d['pincode'], password=None, user_type='individual', referral_code=generate_referral_code())
             svc.audit(request.user, account, 'student_account_registered')
     except IntegrityError:
         return JsonResponse({'error': 'This account could not be created. Check the phone number again.'}, status=400)

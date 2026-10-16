@@ -298,22 +298,16 @@ class StudentEntryForm(forms.Form):
 class StudentAccountForm(forms.Form):
     phone = forms.RegexField(r'^[0-9]{10}$', label='Phone number', max_length=10)
     name = forms.CharField(max_length=150, label='Parent / adult student name')
-    password1 = forms.CharField(label='Password', widget=forms.PasswordInput)
-    password2 = forms.CharField(label='Confirm password', widget=forms.PasswordInput)
+    pincode = forms.RegexField(r'^[0-9]{6}$', max_length=6, label='Pincode')
+    otp = forms.RegexField(r'^[0-9]{6}$', max_length=6, label='OTP')
 
-    def clean(self):
+    def clean_phone(self):
         from django.contrib.auth import get_user_model
-        from django.contrib.auth.password_validation import validate_password
         from django.db.models import Q
-        data = super().clean()
-        phone = data.get('phone')
-        if phone and get_user_model().objects.filter(Q(phone=phone) | Q(username__iexact=phone) | Q(business_phone=phone)).exists():
-            self.add_error('phone', 'This number already belongs to an account. Check it again or ask the account owner to sign in.')
-        if data.get('password1') != data.get('password2'):
-            self.add_error('password2', 'Passwords do not match.')
-        if data.get('password1'):
-            validate_password(data['password1'], get_user_model()(username=phone or '', first_name=data.get('name', '')))
-        return data
+        phone = self.cleaned_data['phone']
+        if get_user_model().objects.filter(Q(phone=phone) | Q(username__iexact=phone) | Q(business_phone=phone)).exists():
+            raise forms.ValidationError('This number already belongs to an account. Check it again.')
+        return phone
 
 
 class BatchForm(StyledForm):
