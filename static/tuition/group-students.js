@@ -3,7 +3,6 @@
   if (!form) return;
   const phone = form.elements.phone, details = document.getElementById('student-details');
   const status = document.getElementById('phone-status'), register = document.getElementById('open-register');
-  const dialog = document.getElementById('register-student'), registration = document.getElementById('register-student-form');
   const existing = document.getElementById('existing-students'), known = document.getElementById('known-student');
   let serial = 0, records = [];
   details.disabled = true;
@@ -41,22 +40,6 @@
   known.addEventListener('change', () => {
     const record = known.value === '' ? null : records[Number(known.value)];
     if (record) { form.elements.name.value = record.name; form.elements.guardian_name.value = record.guardian_name; }
-  });
-  register.addEventListener('click', () => {
-    registration.reset(); registration.elements.phone.value = phone.value.trim();
-    registration.elements.name.value = form.elements.guardian_name.value;
-    document.getElementById('registration-status').textContent = ''; dialog.showModal();
-  });
-  document.getElementById('close-register').addEventListener('click', () => dialog.close());
-  registration.addEventListener('submit', async event => {
-    event.preventDefault();
-    const button = registration.querySelector('[type="submit"]'), output = document.getElementById('registration-status');
-    button.disabled = true; output.textContent = 'Registering...';
-    try {
-      await post(form.dataset.registerUrl, new FormData(registration));
-      registration.reset(); dialog.close(); await check();
-    } catch (error) { output.textContent = error.message; }
-    finally { button.disabled = false; }
   });
   if (/^[0-9]{10}$/.test(phone.value.trim())) check();
 })();

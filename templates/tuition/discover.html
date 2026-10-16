@@ -6,7 +6,7 @@
 <main class="learning tuition-discovery">
   <nav class="discovery-nav" aria-label="Learning navigation">
     <a class="discovery-brand" href="{% url 'tuition:discover' %}"><span aria-hidden="true">✦</span> Tuition &amp; learning</a>
-    <div><a href="{% url 'tuition:dashboard' %}">My learning</a>{% if not has_teaching_profile %}<a href="{% url 'tuition:register' %}">Teach with us <span aria-hidden="true">↗</span></a>{% endif %}</div>
+    <div><a href="{% url 'tuition:dashboard' %}">My profile</a>{% if not has_teaching_profile %}<a href="{% url 'tuition:register' %}">Teach with us <span aria-hidden="true">↗</span></a>{% endif %}</div>
   </nav>
   {% if not has_teaching_profile %}<aside class="teacher-invite"><div><p class="eyebrow">SHARE WHAT YOU KNOW</p><h2>Your neighbourhood needs your skills.</h2><p>Create a teaching profile and help more learners find you.</p></div><a href="{% url 'tuition:register' %}">Become a teacher <span aria-hidden="true">↗</span></a></aside>{% endif %}
   <section class="discovery-hero" aria-labelledby="discovery-title">

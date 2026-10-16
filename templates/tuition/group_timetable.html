@@ -2,7 +2,7 @@
 {% block title %}Group timetable &middot; OURPINCODE{% endblock %}
 {% block extra_css %}<link rel="stylesheet" href="{% static 'tuition/learning.css' %}"><link rel="stylesheet" href="{% static 'tuition/group-timetable.css' %}">{% endblock %}
 {% block content %}<main class="learning group-timetable">
-<nav>{% if request.user.is_authenticated %}<a class="button" href="{% url 'tuition:notifications' %}">Tuition notifications</a>{% endif %}<a href="{% url 'tuition:dashboard' %}">&larr; My learning</a><a href="?month={% now 'Y-m' %}">View calendar</a></nav>
+<nav>{% if request.user.is_authenticated %}<a class="button" href="{% url 'tuition:notifications' %}">Tuition notifications</a>{% endif %}<a href="{% url 'tuition:dashboard' %}">&larr; My profile</a><a href="?month={% now 'Y-m' %}">View calendar</a></nav>
 <header><h1>Group timetable</h1><p>Your groups, class days and start times.</p></header>
 {% for group in groups %}<section class="card"><h2>{{ group.name }}</h2><p>{{ group.lesson.teacher.name }}</p>
 {% regroup group.weekly_slots by weekday as days %}
