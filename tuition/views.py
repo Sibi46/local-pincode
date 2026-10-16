@@ -14,6 +14,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
+from django.views.decorators.debug import sensitive_post_parameters
 from . import models as m, forms as f, services as svc, permissions as perm
 from .storage import upload_image, storage
 
@@ -245,16 +246,79 @@ def group_create(request, uid):
 
 
 @login_required
-def group_students(request, uid):
-    batch = get_object_or_404(m.Batch, uid=uid)
-    perm.own(request.user, batch.lesson.teacher)
-    if batch.lesson.teacher.status != 'approved':
+def group_students(request, uid=None, teacher_id=None):
+    batch = get_object_or_404(m.Batch.objects.select_related('lesson__teacher'), uid=uid) if uid else None
+    teacher = batch.lesson.teacher if batch else teacher_for(request, teacher_id)
+    perm.own(request.user, teacher)
+    if teacher.status != 'approved':
         raise PermissionDenied
-    form = f.GroupMemberForm(request.POST or None, batch=batch)
-    def save(form):
-        svc.add_named_student(request.user, batch, form.cleaned_data['name'], form.cleaned_data['phone'], form.cleaned_data['subject'])
-        return reverse('tuition:batch', args=[batch.uid])
-    return form_page(request, batch.name + ' — Add students', form, save)
+    form = f.GroupMemberForm(request.POST or None, batch=batch, teacher=teacher)
+    if request.method == 'POST' and form.is_valid():
+        try:
+            selected = form.cleaned_data['group']
+            svc.add_named_student(request.user, selected, form.cleaned_data['name'], form.cleaned_data['phone'],
+                form.cleaned_data['subject'], form.cleaned_data['guardian_name'])
+            messages.success(request, 'Student added to ' + selected.name + '.')
+            return redirect('tuition:batch', uid=selected.uid)
+        except ValidationError as exc:
+            form.add_error(None, exc)
+    group_subjects = {str(group.pk): [{'id': subject.pk, 'name': subject.name} for subject in group.lesson.subjects.all() if subject.active] for group in form.fields['group'].queryset}
+    return page(request, 'Add student', template='tuition/group_students.html', form=form,
+        teacher=teacher, group_subjects=group_subjects)
+
+
+@login_required
+@require_POST
+def student_phone_check(request, teacher_id):
+    from django.contrib.auth import get_user_model
+    from django.http import JsonResponse
+    import re
+    teacher = teacher_for(request, teacher_id)
+    if teacher.status != 'approved': raise PermissionDenied
+    from jobs.views import _rate_limit
+    if not _rate_limit(f'tuition_phone_check:{request.user.pk}', 30, 300):
+        return JsonResponse({'error': 'Too many checks. Please try again in a few minutes.'}, status=429)
+    phone = request.POST.get('phone', '').strip()
+    if not re.fullmatch(r'[0-9]{10}', phone):
+        return JsonResponse({'error': 'Enter a 10-digit phone number.'}, status=400)
+    registered = get_user_model().objects.filter(phone=phone, is_active=True).exists()
+    # No account names or other teachers' private student/guardian information.
+    records = list(m.Learner.objects.filter(phone=phone, created_by=request.user,
+        enrolments__lesson__teacher=teacher).distinct().values('name', 'guardian_name')[:20]) if registered else []
+    response = JsonResponse({'registered': registered, 'students': records})
+    response['Cache-Control'] = 'private, no-store'
+    return response
+
+
+@sensitive_post_parameters()
+@login_required
+@require_POST
+def student_account_register(request, teacher_id):
+    from django.contrib.auth import get_user_model
+    from django.db import IntegrityError
+    from django.http import JsonResponse
+    teacher = teacher_for(request, teacher_id)
+    if teacher.status != 'approved': raise PermissionDenied
+    from jobs.views import _rate_limit
+    if not _rate_limit(f'tuition_account_create:{request.user.pk}', 10, 3600):
+        return JsonResponse({'error': 'Registration limit reached. Please try again later.'}, status=429)
+    form = f.StudentAccountForm(request.POST)
+    if not form.is_valid():
+        return JsonResponse({'errors': form.errors.get_json_data()}, status=400)
+    try:
+        with transaction.atomic():
+            teacher = svc.lock_teacher(request.user, teacher)
+            if teacher.status != 'approved': raise PermissionDenied
+            from jobs.utils import generate_referral_code
+            d = form.cleaned_data
+            account = get_user_model().objects.create_user(username=d['phone'], phone=d['phone'],
+                first_name=d['name'], password=d['password1'], user_type='individual', referral_code=generate_referral_code())
+            svc.audit(request.user, account, 'student_account_registered')
+    except IntegrityError:
+        return JsonResponse({'error': 'This account could not be created. Check the phone number again.'}, status=400)
+    response = JsonResponse({'registered': True})
+    response['Cache-Control'] = 'private, no-store'
+    return response
 
 
 @login_required

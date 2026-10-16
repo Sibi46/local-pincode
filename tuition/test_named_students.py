@@ -47,3 +47,73 @@ class NamedStudentTests(TestCase):
         other = m.Subject.objects.create(name='Other', slug='other')
         self.client.post(url, {**self.data(), 'subject': other.pk})
         self.assertFalse(m.Enrolment.objects.exists())
+
+    def test_parent_name_and_group_selection(self):
+        self.client.force_login(self.owner)
+        batch = m.Batch.objects.create(lesson=self.lesson, name='Evening', mode='online', capacity=3)
+        response = self.client.post(reverse('tuition:group_students', args=[self.batch.uid]),
+            {**self.data(), 'group':batch.pk, 'guardian_name':'Parent Name'})
+        self.assertEqual(response.status_code, 302)
+        enrolment = m.Enrolment.objects.get(lesson=self.lesson)
+        self.assertEqual(enrolment.membership.batch, batch)
+        self.assertEqual(enrolment.learner.guardian_name, 'Parent Name')
+        self.assertFalse(enrolment.learner.guardians.exists())
+        self.assertIsNone(enrolment.learner.user_id)
+
+    def test_phone_check_scoped_records_and_permissions(self):
+        from django.core.cache import cache
+        cache.clear()
+        self.client.force_login(self.owner)
+        url = reverse('tuition:student_phone_check', args=[self.teacher.uid])
+        response = self.client.post(url, {'phone':self.parent.phone})
+        self.assertTrue(response.json()['registered'])
+        self.assertEqual(response.json()['students'], [])
+        self.client.post(reverse('tuition:group_students', args=[self.batch.uid]), {**self.data(), 'guardian_name':'Own parent name'})
+        response = self.client.post(url, {'phone':self.parent.phone})
+        self.assertEqual(response.json()['students'], [{'name':'Child','guardian_name':'Own parent name'}])
+        self.assertIn('no-store', response['Cache-Control'])
+        self.client.force_login(self.other)
+        self.assertEqual(self.client.post(url, {'phone':self.parent.phone}).status_code, 403)
+
+    def test_popup_registration_keeps_teacher_logged_in_and_rejects_duplicates(self):
+        from django.core.cache import cache
+        from django.contrib.auth import get_user_model
+        cache.clear()
+        self.client.force_login(self.owner)
+        url = reverse('tuition:student_account_register', args=[self.teacher.uid])
+        data = {'phone':'9000000089','name':'New Parent','password1':'Secure-Parent-789!', 'password2':'Secure-Parent-789!'}
+        self.assertEqual(self.client.post(url, data).status_code, 200)
+        self.assertEqual(int(self.client.session['_auth_user_id']), self.owner.pk)
+        user = get_user_model().objects.get(phone=data['phone'])
+        self.assertTrue(user.check_password(data['password1']))
+        self.assertFalse(user.is_staff)
+        self.assertFalse(user.is_superuser)
+        self.assertFalse(user.admin_role)
+        self.assertFalse(m.GuardianLink.objects.filter(user=user).exists())
+        self.assertEqual(self.client.post(url, data).status_code, 400)
+        self.client.force_login(self.other)
+        self.assertEqual(self.client.post(url, data).status_code, 403)
+
+    def test_teacher_entry_and_other_group_rejected(self):
+        self.client.force_login(self.owner)
+        self.assertEqual(self.client.get(reverse('tuition:teacher_students', args=[self.teacher.uid])).status_code, 200)
+        self.assertContains(self.client.get(reverse('tuition:profile', args=[self.teacher.slug])), 'Add student')
+        other_teacher = m.TeacherProfile.objects.create(owner=self.other, kind='teacher', name='Other', status='approved', pincode='600001')
+        lesson = m.Lesson.objects.create(teacher=other_teacher, name='Other', capacity=5, start_date=self.lesson.start_date)
+        batch = m.Batch.objects.create(lesson=lesson, name='Other', capacity=5)
+        response = self.client.post(reverse('tuition:group_students', args=[self.batch.uid]), {**self.data(), 'group':batch.pk})
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(m.Enrolment.objects.exists())
+        self.client.force_login(self.other)
+        self.assertNotContains(self.client.get(reverse('tuition:profile', args=[self.teacher.slug])), 'Add student')
+
+    def test_phone_actions_require_csrf_and_approved_teacher(self):
+        from django.test import Client
+        client = Client(enforce_csrf_checks=True)
+        client.force_login(self.owner)
+        url = reverse('tuition:student_account_register', args=[self.teacher.uid])
+        self.assertEqual(client.post(url, {}).status_code, 403)
+        self.client.force_login(self.owner)
+        self.teacher.status = 'pending'; self.teacher.save()
+        self.assertEqual(self.client.post(url, {}).status_code, 403)
+        self.assertEqual(self.client.post(reverse('tuition:student_phone_check', args=[self.teacher.uid]), {'phone':self.parent.phone}).status_code, 403)

@@ -315,7 +315,7 @@ def review_guardian(user, link, status, verification):
 
 
 @transaction.atomic
-def add_named_student(user, batch, name, phone, subject):
+def add_named_student(user, batch, name, phone, subject, guardian_name=""):
     from .models import Learner
     teacher = lock_teacher(user, batch.lesson.teacher)
     if teacher.status != 'approved':
@@ -337,7 +337,7 @@ def add_named_student(user, batch, name, phone, subject):
     if batch.memberships.filter(enrolment__status='active', enrolment__learner__phone=phone, enrolment__learner__name__iexact=name.strip()).exists():
         raise ValidationError('This student is already in this group.')
     # Registration is checked only; it never grants account or guardian access.
-    learner = Learner(name=name.strip(), phone=phone, created_by=user, pincode='')
+    learner = Learner(name=name.strip(), phone=phone, guardian_name=guardian_name.strip(), created_by=user, pincode='')
     learner.full_clean(exclude=['pincode'])
     learner.save()
     learner.interests.add(subject)
