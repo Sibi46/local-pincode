@@ -23,7 +23,7 @@
   let index = 0, changing = false;
   // Each new message starts on a two-second cadence, including its animation.
   setInterval(async () => {
-    if (changing || document.hidden || motion.matches || banner.contains(document.activeElement)) return;
+    if (slides.length < 2 || changing || document.hidden || motion.matches || banner.matches(':hover') || banner.contains(document.activeElement)) return;
     changing = true;
     const outgoing = slides[index];
     try {
@@ -43,7 +43,7 @@
     } finally {
       changing = false;
     }
-  }, 2000);
+  }, banner.classList.contains('hp-promo-diwali') ? 4000 : 2000);
 })();
 
 // Rotate decorative product categories independently of the promotional links.

@@ -1,8 +1,14 @@
 {% load static %}
 <section class="hp-section hp-overview" aria-label="Explore your neighbourhood">
-  <section class="hp-promo hp-promo-shopping hp-promo-pooja" aria-label="Saraswathi Pooja festive promotions">
-    <div class="hp-promo-art hp-promo-art-left" aria-hidden="true"><img src="{% static 'images/promo-saraswathi-veena.svg' %}" alt="" width="112" height="96"></div>
-    <div class="hp-promo-art hp-promo-art-right" aria-hidden="true"><img src="{% static 'images/promo-saraswathi-books.svg' %}" alt="" width="112" height="96"></div>
+  <section class="hp-promo hp-promo-diwali" aria-labelledby="diwali-greeting">
+    <div class="diwali-sky" aria-hidden="true"><span class="diwali-burst"></span><span class="diwali-burst"></span><span class="diwali-star">✦</span><span class="diwali-star">✧</span><span class="diwali-star">✦</span><span class="diwali-star">✧</span></div>
+    <div class="diwali-diya diwali-diya-left" aria-hidden="true"><span class="diwali-flame"></span><span class="diwali-bowl"></span></div>
+    <div class="diwali-diya diwali-diya-right" aria-hidden="true"><span class="diwali-flame"></span><span class="diwali-bowl"></span></div>
+    <div class="diwali-wishes">
+      <p class="diwali-kicker">A LITTLE LIGHT. A LOT OF JOY.</p>
+      <h2 id="diwali-greeting"><span>Advance</span> Happy Diwali</h2>
+      <p class="diwali-message">Light up your neighbourhood with love &amp; local discoveries.</p>
+    </div>
     <div class="hp-promo-stage">
       <a class="hp-promo-slide" href="/advertise/register/" data-promo-slide>Create your <em>business.</em></a>
       <a class="hp-promo-slide" href="{% if request.user.is_authenticated and request.user.advertiser.status == 'approved' %}/advertise/dashboard/{% else %}/advertise/register/{% endif %}" data-promo-slide hidden>Post your <em>ads.</em></a>

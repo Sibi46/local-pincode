@@ -29,5 +29,56 @@ body{background:#faf9fd;color:var(--hp-ink);padding-bottom:86px}html{scroll-beha
 
 .hp-promo-art img{width:100%;height:100%;object-fit:contain;display:block}.hp-promo-art img[hidden]{display:none}
 
+/* Diwali: saffron and gold, terracotta diyas and gentle fireworks. */
+.hp-promo-diwali{position:relative;isolation:isolate;overflow:hidden;border:1px solid #d995435c;border-radius:22px;padding:28px 20px;background:radial-gradient(ellipse at 50% 0%,#fff8dc 0%,transparent 65%),radial-gradient(ellipse at 0% 100%,#f8ad5566,transparent 55%),linear-gradient(120deg,#ffe1a7,#fff0c9 50%,#ffd18e);color:#6f301c;box-shadow:0 12px 30px #9a562014,inset 0 0 55px #fff6d944}
+.hp-promo-diwali::before{content:"";position:absolute;inset:8px;border:1px solid #bd792c45;border-radius:15px;pointer-events:none;z-index:-1}
+.hp-promo-diwali::after{content:"";position:absolute;bottom:-90px;left:calc(50% - 130px);width:260px;height:150px;border-radius:50%;background:#ef982014;filter:blur(20px);pointer-events:none;z-index:-1}
+.diwali-wishes{position:relative;z-index:1;text-align:center;padding:0 95px}
+.diwali-kicker{font-size:9px;font-weight:600;letter-spacing:2.5px;color:#8e4c21;margin-bottom:9px}
+.diwali-wishes h2{font-family:Georgia,'Times New Roman',serif;font-size:clamp(32px,4vw,46px);font-weight:500;line-height:1.2;letter-spacing:-1px;color:#8b3026;text-shadow:0 2px 22px #fff6da80}
+.diwali-wishes h2>span{display:block;font-family:'Poppins','Segoe UI',sans-serif;font-size:11px;font-weight:500;letter-spacing:4px;text-transform:uppercase;color:#9b4a23;margin-bottom:4px}
+.diwali-message{font-size:11px;line-height:1.7;color:#794729;margin-top:10px}
+.hp-promo-diwali .hp-promo-stage{height:45px;max-width:450px;margin:12px auto 0;border-top:1px solid #af6c3333;background:none}
+.hp-promo-diwali .hp-promo-slide{font-size:17px;font-weight:500;letter-spacing:0;color:#733d25;padding:9px 6px}
+.hp-promo-diwali .hp-promo-slide em{color:#96372a;text-decoration:underline;text-decoration-color:#af572866;text-underline-offset:4px}
+.hp-promo-diwali .hp-promo-slide:focus-visible{outline-color:#96372a;outline-offset:-3px;border-radius:8px}
+.diwali-sky{position:absolute;inset:0;z-index:-1;pointer-events:none}
+.diwali-star{position:absolute;color:#b37524;animation:diwali-twinkle 3.5s ease-in-out infinite}
+.diwali-star:nth-of-type(3){top:18%;left:7%;font-size:16px}
+.diwali-star:nth-of-type(4){top:13%;right:13%;font-size:24px;animation-delay:-1.4s}
+.diwali-star:nth-of-type(5){bottom:20%;left:24%;font-size:10px;animation-delay:-2.5s}
+.diwali-star:nth-of-type(6){top:52%;right:6%;font-size:12px;animation-delay:-.8s}
+.diwali-burst{position:absolute;left:15%;top:24%;width:4px;height:4px;border-radius:50%;color:#be7c2a;box-shadow:0 -24px,17px -17px,24px 0,17px 17px,0 24px,-17px 17px,-24px 0,-17px -17px;animation:diwali-bloom 5s ease-out infinite;opacity:0}
+.diwali-burst:nth-child(2){left:auto;right:18%;top:28%;color:#bd5c4f;animation-delay:-2.5s}
+.diwali-diya{position:absolute;bottom:57px;width:94px;height:80px;pointer-events:none}
+.diwali-diya-left{left:36px;transform:rotate(-7deg)}
+.diwali-diya-right{right:36px;transform:rotate(7deg)}
+.diwali-bowl{position:absolute;bottom:0;left:0;width:100%;height:34px;border-radius:8% 8% 50% 50% / 15% 15% 95% 95%;background:repeating-linear-gradient(90deg,transparent 0 10px,#ffd38a38 10px 12px,transparent 12px 20px),linear-gradient(#f3a452,#bc4f31 55%,#7c2c2c);border-top:5px solid #ffd38a;box-shadow:0 8px 20px #0d071c44,0 -10px 35px #ffb83025}
+.diwali-flame{position:absolute;bottom:33px;left:calc(50% - 11px);width:22px;height:38px;border-radius:80% 15% 55% 45%;background:radial-gradient(ellipse at 40% 75%,#fffce5 0 20%,#ffe49a 35%,#ffb344 65%,#ed752c);transform:rotate(-12deg);transform-origin:50% 100%;box-shadow:0 0 18px #ffcd8580,0 0 45px #ffb44a55;animation:diwali-flicker 2.6s ease-in-out infinite}
+.diwali-diya-right .diwali-flame{animation-delay:-1.2s}
+@keyframes diwali-flicker{0%,100%{transform:rotate(-12deg) scale(1)}35%{transform:rotate(-6deg) scale(.94,1.06)}70%{transform:rotate(-16deg) scale(1.04,.96)}}
+@keyframes diwali-twinkle{0%,100%{opacity:.25;transform:scale(.8)}50%{opacity:.9;transform:scale(1.12)}}
+@keyframes diwali-bloom{0%,15%{opacity:0;transform:scale(.2)}35%{opacity:.65}70%,100%{opacity:0;transform:scale(1.6)}}
+@media(max-width:600px){
+  .hp-promo-diwali{padding:25px 12px;border-radius:18px}
+  .diwali-wishes{padding:0 30px}
+  .diwali-kicker{font-size:7px;letter-spacing:1.6px}
+  .diwali-wishes h2{font-size:32px;letter-spacing:-.8px}
+  .diwali-wishes h2>span{font-size:9px;letter-spacing:3px;margin-bottom:7px}
+  .diwali-message{font-size:10px;max-width:230px;margin:10px auto 0}
+  .hp-promo-diwali .hp-promo-stage{margin:12px 36px 0;height:48px}
+  .hp-promo-diwali .hp-promo-slide{font-size:14px;line-height:1.45;padding:5px 0}
+  .diwali-diya{width:43px;height:55px;bottom:60px}
+  .diwali-diya-left{left:15px}.diwali-diya-right{right:15px}
+  .diwali-bowl{height:20px;border-top-width:3px}
+  .diwali-flame{width:13px;height:25px;left:calc(50% - 6px);bottom:19px}
+  .diwali-burst{left:12%;top:20%;box-shadow:0 -16px,11px -11px,16px 0,11px 11px,0 16px,-11px 11px,-16px 0,-11px -11px}
+  .diwali-burst:nth-child(2){right:11%;top:24%}
+  .diwali-star:nth-of-type(3){left:5%;top:12%;font-size:11px}
+  .diwali-star:nth-of-type(4){right:7%;top:8%;font-size:17px}
+}
+@media(max-width:360px){.diwali-wishes{padding:0 15px}.diwali-wishes h2{font-size:29px}.diwali-kicker{letter-spacing:1px}.hp-promo-diwali .hp-promo-slide{font-size:12px}}
+@media(prefers-reduced-motion:reduce){.hp-promo-diwali *{animation:none!important}.diwali-burst{opacity:.25;transform:scale(.8)}}
+
 /* Saraswathi Pooja: ivory, temple gold, veena and learning motifs. */
 .hp-promo-pooja{background:radial-gradient(ellipse at 50% 0%,#fffdf2 0%,#f9edcf 65%,#ecd19d 100%);box-shadow:inset 0 0 0 1px #c69a4f80,0 7px 24px #76522514;border:4px double #d9b570}.hp-promo-pooja .hp-promo-stage{height:112px;background:linear-gradient(90deg,transparent,#b8883b88,transparent) top/100% 1px no-repeat}.hp-promo-pooja .hp-promo-slide{color:#643d25;font-size:32px;padding-left:138px;padding-right:138px}.hp-promo-pooja .hp-promo-slide em{color:#8f352f;text-decoration-color:#c5974f80}.hp-promo-pooja .hp-promo-art-left,.hp-promo-pooja .hp-promo-art-right{top:0;width:130px;height:112px}.hp-promo-pooja .hp-promo-stage::after{background:linear-gradient(110deg,transparent 35%,#fffef790 48%,transparent 61%)}@media(max-width:600px){.hp-promo-pooja .hp-promo-stage{height:104px}.hp-promo-pooja .hp-promo-art-left,.hp-promo-pooja .hp-promo-art-right{width:70px;height:90px;top:8px}.hp-promo-pooja .hp-promo-slide{font-size:21px;padding-left:75px;padding-right:75px;letter-spacing:-.4px}}@media(max-width:360px){.hp-promo-pooja .hp-promo-art-left,.hp-promo-pooja .hp-promo-art-right{width:55px}.hp-promo-pooja .hp-promo-slide{padding-left:58px;padding-right:58px;font-size:19px}}
