@@ -471,9 +471,9 @@ document.addEventListener('click',function(){
             <h3><i class="fas fa-map-pin"></i> OUR PINCODE</h3>
             <p>Business, Opportunity, Job at Near You.<br>Find Jobs Near You. Hire People Near You.</p>
             <div class="social-links">
-                <a href="#"><i class="fab fa-facebook"></i></a>
-                <a href="#"><i class="fab fa-instagram"></i></a>
-                <a href="#"><i class="fab fa-linkedin"></i></a>
+                <a href="https://www.facebook.com/" target="_blank" rel="noopener noreferrer" aria-label="Facebook"><i class="fab fa-facebook" aria-hidden="true"></i></a>
+                <a href="https://www.instagram.com/" target="_blank" rel="noopener noreferrer" aria-label="Instagram"><i class="fab fa-instagram" aria-hidden="true"></i></a>
+                <a href="https://www.linkedin.com/" target="_blank" rel="noopener noreferrer" aria-label="Linkedin"><i class="fab fa-linkedin" aria-hidden="true"></i></a>
             </div>
         </div>
         <div class="footer-links">
@@ -762,7 +762,7 @@ if(document.addEventListener)document.addEventListener('keydown',function(e){if(
   </div>
 </nav>
 {% block register_business_button %}
-<a href="/register/?type=company" class="bn-plus-btn" title="Register Business">
+<a href="/register/?type=company" class="bn-plus-btn" title="Register Business" aria-label="Register Business">
   <i class="fas fa-plus"></i>
 </a>
 {% endblock register_business_button %}
@@ -776,14 +776,14 @@ if(document.addEventListener)document.addEventListener('keydown',function(e){if(
 .bn-item i{font-size:19px}
 .bn-item.active{color:#0a66c2}
 .bn-item.active::after{content:'';position:absolute;top:-6px;width:18px;height:3px;background:#0a66c2;border-radius:0 0 3px 3px}
-.bn-fab{margin-top:-22px}
+.bn-fab{margin-top:0}.bottom-nav-inner{align-items:center}.bn-fab-icon{max-width:100%}
 .bn-fab-icon{width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#0a66c2,#004182);color:#fff;display:flex;align-items:center;justify-content:center;font-size:19px;box-shadow:0 4px 14px rgba(10,102,194,.4);margin-bottom:3px}
 .bn-fab-flick{background:linear-gradient(135deg,#7c3aed,#0a66c2);box-shadow:0 4px 14px rgba(124,58,237,.4)}
 .bn-fab span{color:#0a66c2;font-weight:700}
 .bn-fab-active span{color:#7c3aed}
 .bn-fab-active .bn-fab-flick{box-shadow:0 4px 18px rgba(124,58,237,.6)}
-.bn-plus-btn{position:fixed;right:12px;top:12px;width:44px;height:44px;background:linear-gradient(135deg,#0a66c2,#004182);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;text-decoration:none;box-shadow:0 4px 16px rgba(10,102,194,.45);z-index:1100}
-body{padding-bottom:62px}
+.bn-plus-btn{position:fixed;right:16px;bottom:calc(90px + env(safe-area-inset-bottom));width:44px;height:44px;background:linear-gradient(135deg,#0a66c2,#004182);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;text-decoration:none;box-shadow:0 4px 16px rgba(10,102,194,.45);z-index:1100}
+body{padding-bottom:100px}.bottom-nav{padding-bottom:calc(4px + env(safe-area-inset-bottom))}@media(min-width:769px){body{padding-bottom:76px}}
 </style>
 
 <style>
@@ -1115,7 +1115,7 @@ document.addEventListener('DOMContentLoaded',function(){
 })();
 </script>
 
-{% include "includes/quiz_popup.html" %}
+{% if request.resolver_match.url_name != 'quiz_play' %}{% include "includes/quiz_popup.html" %}{% endif %}
 
 <!-- ── PAGE LOADING INDICATOR ── -->
 <div id="opc-bar" style="position:fixed;top:0;left:0;width:0%;height:3px;background:linear-gradient(90deg,#1d4ed8,#f97316,#059669);z-index:99999;transition:width .25s ease,opacity .3s ease;opacity:0;pointer-events:none"></div>

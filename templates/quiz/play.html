@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+{% block title %}Quiz ? OUR PINCODE{% endblock %}
+{% block extra_css %}
+<style>
+#quiz-form fieldset{min-width:0}#quiz-form label{cursor:pointer;border-bottom:1px solid #eee}#quiz-form label:has(input:checked){background:#eef2ff}#quiz-form button,#quiz-next,main .btn-visit{background:#4f46e5;color:#fff;border:0;border-radius:10px;font-weight:700;cursor:pointer}#quiz-status{margin:16px 0;line-height:1.6}#quiz-form button:disabled{opacity:.6;cursor:wait}main h1{margin:16px 0}
+</style>
+{% endblock %}
+{% block content %}
+<main style="max-width:640px;margin:32px auto;padding:20px">
+<a href="/">? Home</a><h1>Test your knowledge</h1>
+{% if request.user.is_authenticated %}
+<p>Answer quizzes from businesses in your profile pincode.</p>
+{% if request.user.is_employer %}<p><a href="{% url 'quiz_list' %}">Manage my quizzes</a></p>{% endif %}
+{% csrf_token %}
+<p id="quiz-status" role="status">Loading a question?</p>
+<form id="quiz-form" hidden>
+<fieldset style="padding:20px;border:1px solid #ddd;border-radius:12px"><legend id="quiz-question"></legend><img id="quiz-image" hidden alt="Question illustration" style="max-width:100%;max-height:240px"><div id="quiz-options"></div></fieldset>
+<button type="submit" class="btn-visit" style="padding:12px;margin-top:16px">Submit answer</button>
+</form>
+<button id="quiz-next" type="button" hidden style="padding:12px;margin-top:16px">Next question</button>
+<script>
+(function(){
+const form=document.getElementById('quiz-form'),status=document.getElementById('quiz-status'),next=document.getElementById('quiz-next');
+let questionId=null,busy=false;
+async function load(){
+ form.hidden=true;next.hidden=true;status.textContent='Loading a question?';
+ try{
+  const response=await fetch('/quiz/api/next/');if(!response.ok)throw new Error();const data=await response.json();
+  if(data.done){status.textContent='No unanswered quizzes are available for your pincode. Check your profile pincode or come back later.';return;}
+  questionId=data.id;document.getElementById('quiz-question').textContent=data.question;
+  const image=document.getElementById('quiz-image');image.hidden=!data.question_image;if(data.question_image)image.src=data.question_image;
+  const options=document.getElementById('quiz-options');options.replaceChildren();
+  Object.entries(data.options).forEach(([key,value])=>{
+   const label=document.createElement('label');label.style.cssText='display:flex;align-items:center;gap:10px;padding:12px;flex-wrap:wrap';
+   const input=document.createElement('input');input.type='radio';input.name='answer';input.value=key;input.required=true;
+   label.append(input,document.createTextNode(key+'. '+(value.text||'')));
+   if(value.image){const img=document.createElement('img');img.src=value.image;img.alt='Option '+key;img.style.cssText='max-width:160px;max-height:120px';label.append(img);}options.append(label);
+  });
+  status.textContent='Choose one answer.';form.hidden=false;
+ }catch(error){status.textContent='Could not load the quiz. Please try again.';next.textContent='Retry';next.hidden=false;}
+}
+form.addEventListener('submit',async(event)=>{
+ event.preventDefault();if(busy)return;busy=true;const button=form.querySelector('button');button.disabled=true;
+ try{
+  const response=await fetch('/quiz/api/answer/',{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':document.querySelector('[name=csrfmiddlewaretoken]').value},body:JSON.stringify({question_id:questionId,answer:new FormData(form).get('answer')})});
+  if(!response.ok)throw new Error();const result=await response.json();
+  status.textContent=result.already_answered?'You already answered this question.':result.correct?'Correct!':'Correct answer: '+result.correct_answer+' ? '+result.correct_text;
+  form.hidden=true;next.textContent='Next question';next.hidden=false;
+ }catch(error){status.textContent='Could not submit your answer. Please try again.';}finally{busy=false;button.disabled=false;}
+});
+next.addEventListener('click',load);load();
+})();
+</script>
+{% else %}
+<p>Sign in to answer quizzes from businesses near you.</p><a href="/login/?next=/quiz/play/" class="btn-visit" style="display:inline-block;padding:12px">Sign In</a>
+{% endif %}
+</main>
+{% endblock %}

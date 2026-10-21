@@ -18,6 +18,7 @@ PUBLIC_PREFIXES = [
     '/api/check-phone/',
     '/api/pincode/',
     '/api/reset-password/',
+    '/quiz/play/',                # quiz landing page; answer APIs require login
     '/flicks/',                   # browse flicks
     '/health/',                   # browse health
     '/vouchers/marketplace/',     # browse vouchers

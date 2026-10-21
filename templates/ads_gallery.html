@@ -88,6 +88,7 @@
   .adv-hero-txt{position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:flex-end;justify-content:flex-end;padding:16px 20px 24px;text-align:right;max-width:100%}
 }
 </style>
+<nav aria-label="Breadcrumb" style="padding:12px 16px"><a href="/" style="color:#0a66c2;font-weight:700"><i class="fas fa-home" aria-hidden="true"></i> Home</a> / Offers</nav>
 <div class="adv-hero">
   <img src="/static/images/adsnew.jpg" alt="">
   <div class="adv-hero-ov"></div>
@@ -151,7 +152,7 @@
 <!-- ═══════════════════════════════════════
      SWIGGY-STYLE OFFERS SECTION
 ═══════════════════════════════════════ -->
-{% if flash_offers or normal_offers %}
+{% if offer_categories %}
 <div style="background:#fff;padding:0 0 4px">
 
   <!-- Section header -->
@@ -170,6 +171,7 @@
     {% endfor %}
   </div>
 
+  {% if not flash_offers and not normal_offers %}<p role="status" style="padding:24px 16px">No offers match this category. <a href="/advertise/" style="color:#0a66c2">Show all offers</a></p>{% endif %}
   <!-- Flash Deals -->
   {% if flash_offers %}
   <div style="background:linear-gradient(135deg,#FF5722,#FF9800);padding:12px 16px 6px;margin-bottom:2px">
@@ -179,7 +181,7 @@
     </div>
     <div style="display:flex;gap:10px;overflow-x:auto;scrollbar-width:none;padding-bottom:10px;-webkit-overflow-scrolling:touch">
       {% for o in flash_offers %}
-      <div onclick="openOffer({{ o.pk }})" style="flex-shrink:0;width:160px;background:#fff;border-radius:18px;overflow:hidden;box-shadow:0 4px 18px rgba(0,0,0,.18);cursor:pointer">
+      <div role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openOffer({{ o.pk }});}" onclick="openOffer({{ o.pk }})" style="flex-shrink:0;width:160px;background:#fff;border-radius:18px;overflow:hidden;box-shadow:0 4px 18px rgba(0,0,0,.18);cursor:pointer">
         <div style="position:relative;height:110px;background:linear-gradient(135deg,#FFF3E0,#FFE0B2);display:flex;align-items:center;justify-content:center;font-size:2.5rem">
           {% if o.image %}<img src="{{ o.image.url }}" style="width:100%;height:100%;object-fit:cover;display:block" alt="">{% else %}
           {% if o.category == 'food' %}🍕{% elif o.category == 'salon' %}💈{% elif o.category == 'health' %}🏥{% elif o.category == 'shop' %}🛒{% elif o.category == 'services' %}🔧{% else %}🎁{% endif %}
@@ -205,9 +207,9 @@
   {% if normal_offers %}
   <div style="padding:14px 16px 24px">
     <div style="font-size:14px;font-weight:800;color:#0F172A;margin-bottom:12px">🏷️ All Offers</div>
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+    <div class="offers-grid">
       {% for o in normal_offers %}
-      <div onclick="openOffer({{ o.pk }})" style="background:#fff;border-radius:12px;overflow:hidden;border:1.5px solid #E2E8F0;cursor:pointer;display:flex;flex-direction:column">
+      <div role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openOffer({{ o.pk }});}" onclick="openOffer({{ o.pk }})" style="background:#fff;border-radius:12px;overflow:hidden;border:1.5px solid #E2E8F0;cursor:pointer;display:flex;flex-direction:column">
         <!-- Image box -->
         <div style="position:relative;width:100%;height:90px;background:linear-gradient(135deg,#F1F5F9,#E2E8F0);display:flex;align-items:center;justify-content:center;font-size:1.8rem;overflow:hidden">
           {% if o.image %}<img src="{{ o.image.url }}" style="width:100%;height:100%;object-fit:cover;display:block;position:absolute;inset:0" alt="">{% else %}
@@ -246,7 +248,8 @@ var OFFERS_DATA = {
     phone: "{{ o.contact_phone|escapejs }}",
     valid_until: "{% if o.valid_until %}{{ o.valid_until|date:'d M Y' }}{% endif %}",
     valid_days: "{{ o.valid_days|escapejs }}",
-    image: "{% if o.image %}{{ o.image.url }}{% endif %}"
+    store: "{% if o.owner.company.company_id %}{% url 'business_profile' o.owner.company.company_id %}{% elif o.link_url %}{{ o.link_url|escapejs }}{% endif %}",
+    image: "{% if o.image %}{{ o.image.url|escapejs }}{% endif %}"
   },
   {% endfor %}
   {% for o in normal_offers %}
@@ -259,7 +262,8 @@ var OFFERS_DATA = {
     phone: "{{ o.contact_phone|escapejs }}",
     valid_until: "{% if o.valid_until %}{{ o.valid_until|date:'d M Y' }}{% endif %}",
     valid_days: "{{ o.valid_days|escapejs }}",
-    image: "{% if o.image %}{{ o.image.url }}{% endif %}"
+    store: "{% if o.owner.company.company_id %}{% url 'business_profile' o.owner.company.company_id %}{% elif o.link_url %}{{ o.link_url|escapejs }}{% endif %}",
+    image: "{% if o.image %}{{ o.image.url|escapejs }}{% endif %}"
   }{% if not forloop.last %},{% endif %}
   {% endfor %}
 };
@@ -281,6 +285,7 @@ var OFFERS_DATA = {
     <div id="omDesc" style="font-size:13px;color:#64748B;margin-bottom:8px;line-height:1.6"></div>
     <div id="omPhone" style="font-size:13px;color:#0a66c2;font-weight:700;margin-bottom:4px;display:none"><i class="fas fa-phone-alt"></i> <span id="omPhoneVal"></span></div>
     <div id="omAddr" style="font-size:12px;color:#666;margin-bottom:6px;display:none"><i class="fas fa-map-marker-alt" style="color:#EF4444"></i> <span id="omAddrVal"></span></div>
+    <a id="omStore" class="btn-visit" style="display:none;padding:12px;border-radius:10px;margin-bottom:12px;text-align:center">Visit Store</a>
     <div id="omValid" style="font-size:12px;color:#EF4444;font-weight:700;margin-bottom:16px"></div>
     <div style="display:flex;gap:10px">
       <button id="omWA" onclick="" style="flex:1;background:#25D366;color:#fff;border:none;border-radius:12px;padding:13px;font-size:14px;font-weight:800;cursor:pointer;display:none"><i class="fab fa-whatsapp"></i> WhatsApp</button>
@@ -301,6 +306,9 @@ function openOffer(pk) {
   document.getElementById('omCat').textContent = '📂 ' + o.category;
   document.getElementById('omTitle').textContent = o.title;
   document.getElementById('omDesc').textContent = o.description;
+  var store = document.getElementById('omStore');
+  store.style.display = o.store ? 'block' : 'none';
+  if(o.store) store.href = o.store;
   var validEl = document.getElementById('omValid');
   validEl.textContent = o.valid_days ? '🔁 Repeats every ' + o.valid_days : (o.valid_until ? '⏰ Valid till ' + o.valid_until : '');
   var imgEl = document.getElementById('omImage');

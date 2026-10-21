@@ -232,3 +232,7 @@ def quiz_submit_answer(request):
         'correct_answer': question.correct_answer,
         'correct_text': question.correct_text(),
     })
+
+
+def quiz_play(request):
+    return render(request, 'quiz/play.html')

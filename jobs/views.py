@@ -1945,8 +1945,10 @@ def ads_gallery(request):
     advertiser_banners = Advertiser.objects.filter(
         status='approved', banner_image__isnull=False
     ).exclude(banner_image='')
-    cat = request.GET.get('cat', '')
-    offers_qs = LocalOffer.objects.filter(is_active=True)
+    cat = request.GET.get('cat', '').strip().lower()
+    if cat not in dict(LocalOffer.CATEGORY_CHOICES):
+        cat = ''
+    offers_qs = LocalOffer.objects.filter(is_active=True).select_related('owner__company')
     if cat:
         offers_qs = offers_qs.filter(category=cat)
     flash_offers  = offers_qs.filter(is_flash=True)

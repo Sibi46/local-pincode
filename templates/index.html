@@ -293,7 +293,7 @@ a{text-decoration:none;color:inherit}
 .bn-item.active{color:#1d4ed8}
 .bn-item.active::after{content:'';position:absolute;top:-6px;width:18px;height:3px;background:#1d4ed8;border-radius:0 0 3px 3px}
 .bn-offer-burst{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;background:#ef4444;color:#fff;font-size:6px;font-weight:900;letter-spacing:.3px;clip-path:polygon(50% 0%,54% 7%,61% 2%,63% 10%,71% 6%,71% 14%,79% 12%,77% 20%,86% 20%,82% 27%,91% 29%,85% 35%,93% 39%,86% 44%,93% 50%,86% 56%,93% 61%,85% 65%,91% 71%,82% 73%,86% 80%,77% 80%,79% 88%,71% 86%,71% 94%,63% 90%,61% 98%,54% 93%,50% 100%,46% 93%,39% 98%,37% 90%,29% 94%,29% 86%,21% 88%,23% 80%,14% 80%,18% 73%,9% 71%,15% 65%,7% 61%,14% 56%,7% 50%,14% 44%,7% 39%,15% 35%,9% 29%,18% 27%,14% 20%,23% 20%,21% 12%,29% 14%,29% 6%,37% 10%,39% 2%,46% 7%);line-height:1;text-align:center;padding:0}
-.bn-fab{margin-top:-22px}
+.bn-fab{margin-top:0}
 .bn-fab-icon{width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#1d4ed8,#1e3a8a);color:#fff;display:flex;align-items:center;justify-content:center;font-size:19px;box-shadow:0 4px 14px rgba(29,78,216,.4);margin-bottom:3px}
 .bn-fab-flick{background:linear-gradient(135deg,#7c3aed,#1d4ed8);box-shadow:0 4px 14px rgba(124,58,237,.4)}
 
@@ -324,7 +324,7 @@ a{text-decoration:none;color:inherit}
 .rp-footer a{color:#1d4ed8;font-weight:700;text-decoration:none}
 .rp-timer{font-size:11px;color:#9ca3af;margin-top:4px;min-height:14px}
 </style>
-<link rel="stylesheet" href="{% static 'css/home-refresh.css' %}?v=diwali-2">
+<link rel="stylesheet" href="{% static 'css/home-refresh.css' %}?v=qa-layout-1">
 <script src="{% static 'js/home-refresh.js' %}?v=diwali-2" defer></script>
 </head>
 <body>
@@ -899,10 +899,10 @@ var olxAdCur = 0;
     <div class="footer-bottom">
       <p>&copy; 2026 OUR PINCODE. All rights reserved. &nbsp;|&nbsp; <i class="fas fa-map-marker-alt" style="color:#f97316"></i> India's Local Discovery &amp; Opportunity Platform</p>
       <div style="display:flex;align-items:center;gap:14px">
-        <a href="https://facebook.com" target="_blank" style="color:rgba(255,255,255,.5);font-size:18px"><i class="fab fa-facebook-f"></i></a>
-        <a href="https://instagram.com" target="_blank" style="color:rgba(255,255,255,.5);font-size:18px"><i class="fab fa-instagram"></i></a>
-        <a href="https://youtube.com" target="_blank" style="color:rgba(255,255,255,.5);font-size:18px"><i class="fab fa-youtube"></i></a>
-        <a href="https://linkedin.com" target="_blank" style="color:rgba(255,255,255,.5);font-size:18px"><i class="fab fa-linkedin-in"></i></a>
+        <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" aria-label="Facebook" style="color:rgba(255,255,255,.5);font-size:18px"><i class="fab fa-facebook-f"></i></a>
+        <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" aria-label="Instagram" style="color:rgba(255,255,255,.5);font-size:18px"><i class="fab fa-instagram"></i></a>
+        <a href="https://youtube.com" target="_blank" rel="noopener noreferrer" aria-label="Youtube" style="color:rgba(255,255,255,.5);font-size:18px"><i class="fab fa-youtube"></i></a>
+        <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" aria-label="Linkedin" style="color:rgba(255,255,255,.5);font-size:18px"><i class="fab fa-linkedin-in"></i></a>
         <a href="/health/" class="admin-footer-btn" title="Health"><i class="fas fa-heartbeat"></i></a>
         <a href="/vouchers/marketplace/" class="admin-footer-btn" title="Vouchers"><i class="fas fa-gift"></i></a>
         {% if request.user.is_authenticated %}<a href="/coupons/activate/" class="admin-footer-btn" title="Gift Points"><i class="fas fa-ticket-alt"></i></a>{% endif %}
