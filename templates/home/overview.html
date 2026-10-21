@@ -10,11 +10,9 @@
       <p class="diwali-message">Light up your neighbourhood with love &amp; local discoveries.</p>
     </div>
     <div class="hp-promo-stage">
-      <a class="hp-promo-slide" href="/advertise/register/" data-promo-slide>Create your <em>business.</em></a>
-      <a class="hp-promo-slide" href="{% if request.user.is_authenticated and request.user.advertiser.status == 'approved' %}/advertise/dashboard/{% else %}/advertise/register/{% endif %}" data-promo-slide hidden>Post your <em>ads.</em></a>
-      <a class="hp-promo-slide" href="/offers/post/" data-promo-slide hidden>Share your <em>offers.</em></a>
-      <a class="hp-promo-slide" href="/vouchers/marketplace/" data-promo-slide hidden>Give a <em>gift voucher.</em></a>
-      <a class="hp-promo-slide" href="/smart-marketing/" data-promo-slide hidden>Your business <em>within 2 km.</em></a>
+      <a class="hp-promo-slide" href="{% if request.user.is_authenticated and request.user.advertiser.status == 'approved' %}/advertise/dashboard/{% else %}/advertise/register/{% endif %}" data-promo-slide>Post your <em>shop ads.</em></a>
+      <a class="hp-promo-slide" href="/offers/post/" data-promo-slide hidden>Post your <em>Diwali offers.</em></a>
+      <a class="hp-promo-slide" href="/vouchers/marketplace/" data-promo-slide hidden><em>Gift vouchers.</em></a>
     </div>
   </section>
   <div class="hp-heading"><div><p class="hp-eyebrow">YOUR PINCODE. YOUR POSSIBILITIES.</p><h1>Everything nearby.</h1></div><span class="hp-local-tag">Made for local</span></div>
