@@ -1095,7 +1095,12 @@ def guide_home(request):
              .select_related('category')
              .prefetch_related('recipe_videos', 'growing_videos')
              .order_by('category__order', 'order', 'name'))
-    conditions = HealthCondition.objects.all().order_by('name')
+    items = list(items)
+    conditions = list(HealthCondition.objects.all().order_by('name'))
+    known_slugs = {condition.slug for condition in conditions}
+    for item in items:
+        advice = item.get_condition_advice()
+        item.condition_slugs = ','.join(sorted(known_slugs.intersection(advice))) if isinstance(advice, dict) else ''
     return render(request, 'health/guide_home.html', {'items': items, 'conditions': conditions})
 
 
@@ -1110,6 +1115,8 @@ def guide_item(request, cat_slug, item_slug):
     item           = get_object_or_404(FoodItem, slug=item_slug, category=category)
     conditions     = HealthCondition.objects.all()
     advice         = item.get_condition_advice()
+    if not isinstance(advice, dict):
+        advice = {}
     growing_images = item.growing_images.all().order_by('order')
     recipe_videos  = item.recipe_videos.all()
     growing_videos = item.growing_videos.all()

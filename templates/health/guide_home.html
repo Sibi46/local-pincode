@@ -1,6 +1,6 @@
 ﻿{% extends 'base.html' %}
 {% block title %}Health Guide – OUR PINCODE{% endblock %}
-{% block site_bottom_nav %}{% endblock %}
+
 {% block content %}
 <style>
   nav.navbar { display:none !important; }
@@ -240,12 +240,13 @@
 
   <!-- RIGHT: Food cards -->
   <div id="foodPanel">
+    <p id="conditionEmpty" class="health-empty" role="status" hidden>No published food guidance matches this condition yet. <button type="button" onclick="document.querySelector('.disease-item[data-slug=all]').click()">Show all foods</button></p>
     <h3 id="foodPanelTitle"><i class="fas fa-leaf" style="color:#16a34a"></i> All Foods</h3>
     <div id="foodGrid">
       {% for item in items %}
       <a class="food-card"
          href="/health/guide/{{ item.category.slug }}/{{ item.slug }}/"
-         data-conditions="">
+         data-conditions="{{ item.condition_slugs }}">
         {% if item.image %}
           <img class="food-card-img" src="{{ item.image.url }}" alt="{{ item.name }}" loading="lazy">
         {% else %}
@@ -268,17 +269,7 @@
 </div>
 
 <!-- ── HEALTH BOTTOM NAV ── -->
-<nav id="healthNav">
-  <a href="/" class="hn-item">
-    <i class="fas fa-home"></i><span>Home</span>
-  </a>
-  <a href="/flicks/?cat=health" class="hn-fab">
-    <div class="hn-fab-icon"><i class="fas fa-bolt"></i></div><span>Flick</span>
-  </a>
-  <a href="#" class="hn-item" style="opacity:.45;pointer-events:none">
-    <i class="fas fa-notes-medical"></i><span>My Health</span>
-  </a>
-</nav>
+
 
 <script>
 function filterByDisease(btn, slug) {
@@ -290,13 +281,18 @@ function filterByDisease(btn, slug) {
   if (slug === 'all') {
     title.innerHTML = '<i class="fas fa-leaf" style="color:#16a34a"></i> All Foods';
     cards.forEach(function(c){ c.style.display = ''; });
+    document.getElementById('conditionEmpty').hidden = true;
     return;
   }
   title.innerHTML = '<i class="fas fa-leaf" style="color:#16a34a"></i> ' + btn.querySelector('.d-name').textContent;
+  var matches = 0;
   cards.forEach(function(c){
-    var csv = (c.dataset.conditions || '').toLowerCase();
-    c.style.display = csv.indexOf(slug.toLowerCase()) >= 0 ? '' : 'none';
+    var keys = (c.dataset.conditions || '').split(',');
+    var match = keys.includes(slug);
+    c.style.display = match ? '' : 'none';
+    if(match) matches++;
   });
+  document.getElementById('conditionEmpty').hidden = matches > 0;
 }
 </script>
 {% endblock %}

@@ -1,0 +1,18 @@
+<article class="offer-card" data-offer-id="{{ o.pk }}">
+  <button type="button" class="offer-open" onclick="openOffer({{ o.pk }})" aria-label="View {{ o.title }} at {{ o.business_name }}">
+    <span class="offer-image">
+      {% if o.image %}<img src="{{ o.image.url }}" alt="{{ o.business_name }} offer" loading="lazy">{% else %}<i class="fas fa-tags" aria-hidden="true"></i>{% endif %}
+      <span class="offer-discount">{% if o.is_flash %}Flash: {% endif %}{{ o.discount_text }}</span>
+    </span>
+    <span class="offer-copy">
+      <span class="offer-business">{{ o.business_name }}</span>
+      <span class="offer-title">{{ o.title }}</span>
+      <span class="offer-valid">{% if o.valid_until %}Valid until {{ o.valid_until|date:"d M Y" }}{% elif o.valid_days %}{{ o.valid_days }}{% else %}See offer details{% endif %}</span>
+    </span>
+  </button>
+  <div class="offer-actions">
+    <button type="button" onclick="openOffer({{ o.pk }})">Details</button>
+    {% if o.owner.company.company_id %}<a href="{% url 'business_profile' o.owner.company.company_id %}">Visit Store</a>{% elif o.link_url %}<a href="{{ o.link_url }}">Visit Store</a>{% endif %}
+    <button type="button" onclick="shareOffer('{{ o.business_name|escapejs }}','{{ o.title|escapejs }}','{{ o.discount_text|escapejs }}','{{ o.contact_phone|escapejs }}','{{ o.pk }}')" aria-label="Share {{ o.title }}">Share</button>
+  </div>
+</article>

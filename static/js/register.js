@@ -109,9 +109,34 @@ function switchEmployerType(type) {
     loadEmployerForm(type);
 }
 
+function openBusinessRegistration() {
+    document.getElementById('regBizBtnWrap').style.display = 'none';
+    document.getElementById('regBizForm').style.display = 'block';
+    document.getElementById('regBizForm').scrollIntoView({behavior:'smooth', block:'start'});
+}
 function goBack() {
+    const employer = document.getElementById('step-employer');
+    const form = document.getElementById('regBizForm');
+    if (!employer.classList.contains('hidden') && form.style.display === 'block') {
+        form.style.display = 'none';
+        document.getElementById('regBizBtnWrap').style.display = 'block';
+        employer.scrollIntoView({behavior:'smooth', block:'start'});
+        return;
+    }
     document.querySelectorAll('.reg-step').forEach(s => s.classList.add('hidden'));
     document.getElementById('step1').classList.remove('hidden');
+    currentType = '';
+    document.getElementById('step1').scrollIntoView({behavior:'smooth', block:'start'});
+}
+function registrationBack(event) {
+    const selectedStep = document.querySelector('.reg-step:not(.hidden)');
+    if (selectedStep && selectedStep.id !== 'step1') {
+        event.preventDefault(); goBack(); return false;
+    }
+    if (history.length > 1 && document.referrer.startsWith(location.origin + '/')) {
+        event.preventDefault(); history.back(); return false;
+    }
+    return true;
 }
 
 // ── Inject hidden field helper (used by OTP-based seeker forms) ───────────────

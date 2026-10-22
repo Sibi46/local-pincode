@@ -88,6 +88,7 @@
   .adv-hero-txt{position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:flex-end;justify-content:flex-end;padding:16px 20px 24px;text-align:right;max-width:100%}
 }
 </style>
+<main class="offers-page">
 <nav aria-label="Breadcrumb" style="padding:12px 16px"><a href="/" style="color:#0a66c2;font-weight:700"><i class="fas fa-home" aria-hidden="true"></i> Home</a> / Offers</nav>
 <div class="adv-hero">
   <img src="/static/images/adsnew.jpg" alt="">
@@ -153,88 +154,20 @@
      SWIGGY-STYLE OFFERS SECTION
 ═══════════════════════════════════════ -->
 {% if offer_categories %}
-<div style="background:#fff;padding:0 0 4px">
-
-  <!-- Section header -->
-  <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 16px 10px">
-    <div style="font-size:17px;font-weight:900;color:#0F172A">🔥 Best Offers Near You</div>
-    <div style="font-size:11px;color:#64748B;font-weight:600">{{ flash_offers.count|add:normal_offers.count }} offers</div>
-  </div>
-
-  <!-- Category filter chips -->
-  <div style="display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding:0 16px 12px;-webkit-overflow-scrolling:touch">
-    <a href="/advertise/" style="flex-shrink:0;display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:50px;font-size:12px;font-weight:700;text-decoration:none;border:2px solid {% if not active_cat %}#FF5722{% else %}#E2E8F0{% endif %};background:{% if not active_cat %}#FF5722{% else %}#F8FAFC{% endif %};color:{% if not active_cat %}#fff{% else %}#64748B{% endif %}">🏷️ All</a>
-    {% for val,label in offer_categories %}
-    <a href="/advertise/?cat={{ val }}" style="flex-shrink:0;display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:50px;font-size:12px;font-weight:700;text-decoration:none;border:2px solid {% if active_cat == val %}#FF5722{% else %}#E2E8F0{% endif %};background:{% if active_cat == val %}#FF5722{% else %}#F8FAFC{% endif %};color:{% if active_cat == val %}#fff{% else %}#64748B{% endif %}">
-      {% if val == 'food' %}🍕{% elif val == 'salon' %}💈{% elif val == 'health' %}🏥{% elif val == 'shop' %}🛒{% elif val == 'services' %}🔧{% else %}🎁{% endif %} {{ label }}
-    </a>
-    {% endfor %}
-  </div>
-
-  {% if not flash_offers and not normal_offers %}<p role="status" style="padding:24px 16px">No offers match this category. <a href="/advertise/" style="color:#0a66c2">Show all offers</a></p>{% endif %}
-  <!-- Flash Deals -->
-  {% if flash_offers %}
-  <div style="background:linear-gradient(135deg,#FF5722,#FF9800);padding:12px 16px 6px;margin-bottom:2px">
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-      <span style="font-size:14px;font-weight:900;color:#fff"><span style="display:inline-block;animation:flashBlink .7s infinite">⚡</span> Flash Deals</span>
-      <span id="flashTimer" style="background:rgba(0,0,0,.25);color:#fff;font-size:11px;font-weight:800;padding:3px 10px;border-radius:20px;font-variant-numeric:tabular-nums">Loading…</span>
-    </div>
-    <div style="display:flex;gap:10px;overflow-x:auto;scrollbar-width:none;padding-bottom:10px;-webkit-overflow-scrolling:touch">
-      {% for o in flash_offers %}
-      <div role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openOffer({{ o.pk }});}" onclick="openOffer({{ o.pk }})" style="flex-shrink:0;width:160px;background:#fff;border-radius:18px;overflow:hidden;box-shadow:0 4px 18px rgba(0,0,0,.18);cursor:pointer">
-        <div style="position:relative;height:110px;background:linear-gradient(135deg,#FFF3E0,#FFE0B2);display:flex;align-items:center;justify-content:center;font-size:2.5rem">
-          {% if o.image %}<img src="{{ o.image.url }}" style="width:100%;height:100%;object-fit:cover;display:block" alt="">{% else %}
-          {% if o.category == 'food' %}🍕{% elif o.category == 'salon' %}💈{% elif o.category == 'health' %}🏥{% elif o.category == 'shop' %}🛒{% elif o.category == 'services' %}🔧{% else %}🎁{% endif %}
-          {% endif %}
-          <div style="position:absolute;top:0;left:0;background:rgba(0,0,0,.55);color:#fff;font-size:10px;font-weight:900;padding:4px 9px;border-radius:0 0 10px 0">{{ o.discount_text }}</div>
-        </div>
-        <div style="padding:9px 11px 6px">
-          <div style="font-size:11px;font-weight:800;color:#0F172A;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ o.business_name }}</div>
-          <div style="font-size:10px;color:#64748B;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ o.title }}</div>
-          {% if o.valid_until %}<div style="font-size:9px;color:#EF4444;font-weight:700;margin-top:4px">{{ o.valid_until|date:"d M" }}</div>{% endif %}
-        </div>
-        <div style="display:flex;gap:5px;padding:5px 10px 10px">
-          <div style="flex:1;background:#fff3;color:#fff;border:1.5px solid rgba(255,255,255,.5);border-radius:20px;padding:5px 0;font-size:9px;font-weight:800;text-align:center" onclick="event.stopPropagation();openOffer({{ o.pk }})">View</div>
-          <div style="flex:1;background:#25D366;color:#fff;border-radius:20px;padding:5px 0;font-size:9px;font-weight:800;text-align:center;display:flex;align-items:center;justify-content:center;gap:2px" onclick="event.stopPropagation();shareOffer('{{ o.business_name|escapejs }}','{{ o.title|escapejs }}','{{ o.discount_text|escapejs }}','{{ o.contact_phone|escapejs }}','{{ o.pk }}')"><i class="fab fa-whatsapp"></i> Share</div>
-        </div>
-      </div>
-      {% endfor %}
-    </div>
+<section class="offers-section" aria-labelledby="offers-heading">
+  <div class="offers-heading"><h2 id="offers-heading">Offers Near You</h2><span>{{ flash_offers.count|add:normal_offers.count }} offers</span></div>
+  <nav class="offer-filters" aria-label="Offer categories">
+    <a href="/advertise/" {% if not active_cat %}aria-current="page"{% endif %}>All</a>
+    {% for val,label in offer_categories %}<a href="/advertise/?cat={{ val }}" {% if active_cat == val %}aria-current="page"{% endif %}>{{ label }}</a>{% endfor %}
+  </nav>
+  {% if not flash_offers and not normal_offers %}<p class="offers-empty" role="status">No offers match this category. <a href="/advertise/">Show all offers</a></p>{% endif %}
+  {% if flash_offers or normal_offers %}
+  {% if flash_offers %}<div class="offers-heading"><h2>Available Offers</h2><span id="flashTimer">Limited time offers</span></div>{% endif %}
+  <div class="offers-grid">
+    {% for o in flash_offers %}{% include 'includes/offer_card.html' %}{% endfor %}
+    {% for o in normal_offers %}{% include 'includes/offer_card.html' %}{% endfor %}
   </div>
   {% endif %}
-
-  <!-- Regular Offers grid — same card style as Flash Deals -->
-  {% if normal_offers %}
-  <div style="padding:14px 16px 24px">
-    <div style="font-size:14px;font-weight:800;color:#0F172A;margin-bottom:12px">🏷️ All Offers</div>
-    <div class="offers-grid">
-      {% for o in normal_offers %}
-      <div role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openOffer({{ o.pk }});}" onclick="openOffer({{ o.pk }})" style="background:#fff;border-radius:12px;overflow:hidden;border:1.5px solid #E2E8F0;cursor:pointer;display:flex;flex-direction:column">
-        <!-- Image box -->
-        <div style="position:relative;width:100%;height:90px;background:linear-gradient(135deg,#F1F5F9,#E2E8F0);display:flex;align-items:center;justify-content:center;font-size:1.8rem;overflow:hidden">
-          {% if o.image %}<img src="{{ o.image.url }}" style="width:100%;height:100%;object-fit:cover;display:block;position:absolute;inset:0" alt="">{% else %}
-          {% if o.category == 'food' %}🍕{% elif o.category == 'salon' %}💈{% elif o.category == 'health' %}🏥{% elif o.category == 'shop' %}🛒{% elif o.category == 'services' %}🔧{% else %}🎁{% endif %}
-          {% endif %}
-          <!-- Discount tag -->
-          <div style="position:absolute;top:6px;left:6px;background:#FF5722;color:#fff;font-size:8px;font-weight:900;padding:2px 6px;border-radius:5px;line-height:1.3">{{ o.discount_text }}</div>
-        </div>
-        <!-- Info box -->
-        <div style="padding:6px 7px 4px;flex:1;display:flex;flex-direction:column;gap:1px">
-          <div style="font-size:10px;font-weight:800;color:#0F172A;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ o.business_name }}</div>
-          <div style="font-size:9px;color:#475569;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ o.title }}</div>
-          {% if o.valid_until %}<div style="font-size:8px;color:#EF4444;font-weight:700">{{ o.valid_until|date:"d M" }}</div>{% endif %}
-        </div>
-        <!-- Button row -->
-        <div style="display:grid;grid-template-columns:1fr 1fr;border-top:1px solid #F1F5F9">
-          <div style="padding:6px 0;font-size:9px;font-weight:800;text-align:center;color:#0a66c2;border-right:1px solid #F1F5F9" onclick="event.stopPropagation();openOffer({{ o.pk }})">View</div>
-          <div style="padding:6px 0;font-size:9px;font-weight:800;text-align:center;color:#25D366;display:flex;align-items:center;justify-content:center;gap:2px" onclick="event.stopPropagation();shareOffer('{{ o.business_name|escapejs }}','{{ o.title|escapejs }}','{{ o.discount_text|escapejs }}','{{ o.contact_phone|escapejs }}','{{ o.pk }}')"><i class="fab fa-whatsapp"></i></div>
-        </div>
-      </div>
-      {% endfor %}
-    </div>
-  </div>
-  {% endif %}
-
 <!-- Offer data for JS -->
 <script>
 var OFFERS_DATA = {
@@ -268,7 +201,7 @@ var OFFERS_DATA = {
   {% endfor %}
 };
 </script>
-</div>
+</section>
 {% endif %}
 
 <!-- Offer Detail Popup -->
@@ -430,29 +363,5 @@ function closeAdModal(e) {
 }
 document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeAd(); });
 </script>
-{% endblock %}
-
-{% block site_bottom_nav %}
-<style>
-.ag-botnav{display:none;position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #eee;box-shadow:0 -2px 16px rgba(0,0,0,.08);z-index:998;padding:6px 0 4px}
-.ag-botnav-inner{display:flex;align-items:flex-end;justify-content:space-around;max-width:640px;margin:0 auto}
-.ag-bn{display:flex;flex-direction:column;align-items:center;gap:3px;color:#888;text-decoration:none;font-size:10px;font-weight:600;flex:1;padding:6px 4px;position:relative}
-.ag-bn i{font-size:19px}
-.ag-bn.active{color:#0a66c2}
-.ag-bn.active::after{content:'';position:absolute;top:-6px;width:18px;height:3px;background:#0a66c2;border-radius:0 0 3px 3px}
-.ag-bn-fab{margin-top:-22px}
-@media(max-width:768px){.ag-botnav{display:block}}
-</style>
-<nav class="ag-botnav">
-  <div class="ag-botnav-inner">
-    <a href="/vouchers/marketplace/" class="ag-bn"><span style="font-size:22px;line-height:1">🎁</span><span>Voucher</span></a>
-    <a href="/flicks/" class="ag-bn ag-bn-fab">
-      <div style="width:48px;height:48px;border-radius:50%;overflow:hidden;box-shadow:0 4px 14px rgba(244,63,142,.35)">
-        <img src="/static/images/reel.png" style="width:100%;height:100%;object-fit:cover;display:block">
-      </div>
-      <span>Flick</span>
-    </a>
-    <a href="/jobs/" class="ag-bn"><span style="font-size:22px;line-height:1">🔍</span><span>Jobs</span></a>
-  </div>
-</nav>
+</main>
 {% endblock %}

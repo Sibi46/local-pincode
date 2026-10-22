@@ -105,6 +105,7 @@
 <div class="gi-tabs-bar">
   <div class="gi-tabs-inner">
     <button class="gtab-btn active" data-section="advice"   onclick="jumpTo('advice',this)">🏥 Health Advice</button>
+    <button class="gtab-btn" data-section="nutrition" onclick="jumpTo('nutrition',this)">Nutrition</button>
     {% if item.recipe_content or recipe_videos %}<button class="gtab-btn" data-section="recipe"  onclick="jumpTo('recipe',this)">🍽️ Recipe</button>{% endif %}
     {% if item.growing_content or growing_videos or growing_images %}<button class="gtab-btn" data-section="growing" onclick="jumpTo('growing',this)">🌱 How to Grow</button>{% endif %}
     {% if item.natural_treatment or item.natural_treatment_video or item.natural_treatment_video_url %}<button class="gtab-btn" data-section="natural" onclick="jumpTo('natural',this)">🌿 Natural Treatment</button>{% endif %}
@@ -151,6 +152,14 @@
           </div>
           {% endif %}{% endwith %}{% endfor %}
         {% else %}<p style="color:#94a3b8;font-size:.83rem">No condition advice added yet.</p>{% endif %}
+      </div>
+    </div>
+
+    <div class="reel-slide text-slide" data-section="nutrition" style="background:#0a1628">
+      <div class="text-slide-inner">
+        <h3>Nutrition - {{ item.name }}</h3>
+        <p>{{ item.nutrition|default:"Nutrition information has not been published for this item yet." }}</p>
+        {% if item.benefits %}<h3>Benefits</h3><p>{{ item.benefits }}</p>{% endif %}
       </div>
     </div>
 
@@ -337,8 +346,9 @@
 {% block extra_js %}
 <script>
 function jumpTo(section,btn){
+  var feed=document.getElementById('reelFeed');
   var t=document.querySelector('#reelFeed .reel-slide[data-section="'+section+'"]');
-  if(t) t.scrollIntoView({behavior:'smooth',block:'start'});
+  if(t && feed) feed.scrollTo({top:t.offsetTop,behavior:'smooth'});
   document.querySelectorAll('.gtab-btn').forEach(function(b){b.classList.remove('active');});
   btn.classList.add('active');
 }

@@ -71,6 +71,10 @@ def paths_overlap(first, second):
 SITE_NAME = 'OUR PINCODE'
 SITE_TAGLINE = 'Find Jobs Near You. Hire People Near You.'
 SITE_URL = os.environ.get('SITE_URL', 'https://ourpincode.com').strip().rstrip('/')
+SOCIAL_PROFILE_URLS = {
+    platform: os.environ.get('SOCIAL_' + platform.upper() + '_URL', '')
+    for platform in ('facebook', 'instagram', 'linkedin', 'youtube')
+}
 try:
     _site_url = urlsplit(SITE_URL)
     _site_port = _site_url.port  # Access validates numeric ports and their range.

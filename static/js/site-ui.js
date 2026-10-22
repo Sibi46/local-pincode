@@ -16,7 +16,7 @@
       try { localStorage.setItem('opc-theme', theme); } catch (error) { /* Storage may be disabled. */ }
       update();
     });
-    const header = document.querySelector('.tb-right,.dash-topbar-right,.nav-links,.bp-topbar,.msg-topnav,.sp-topnav,.pj-nav');
+    const header = [...document.querySelectorAll('.tb-right,.dash-topbar-right,.nav-links,.bp-topbar,.msg-topnav,.sp-topnav,.pj-nav,#healthTopBar h2,.gi-hero-inner')].find(element => element.getClientRects().length);
     if (header) header.append(toggle);
     else { toggle.classList.add('opc-theme-floating'); document.body.append(toggle); }
     update();

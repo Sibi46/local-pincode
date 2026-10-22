@@ -55,21 +55,21 @@
   <a href="#cooking">Cooking Methods</a>
   <a href="#timing">Meal Timing</a>
   <a href="#portion">Portions</a>
-  <a href="#recipes">Recipes</a>
-  <a href="#videos">Videos</a>
-  <a href="#faq">FAQ</a>
+  {% if recipes %}<a href="#recipes">Recipes</a>{% endif %}
+  {% if videos %}<a href="#videos">Videos</a>{% endif %}
+  {% if faq %}<a href="#faq">FAQ</a>{% endif %}
 </div>
 
 <div class="hc-wrap">
 
   <div class="hc-section" id="overview">
     <h2>Overview</h2>
-    <div class="hc-box">{{ condition.overview|linebreaks }}</div>
+    <div class="hc-box">{{ condition.overview|default:"Information for this section has not been published yet."|linebreaks }}</div>
   </div>
 
   <div class="hc-section" id="foods-eat">
     <h2>Foods to Eat</h2>
-    <div class="hc-box">{{ condition.foods_to_eat|linebreaks }}</div>
+    <div class="hc-box">{{ condition.foods_to_eat|default:"Information for this section has not been published yet."|linebreaks }}</div>
     {% if foods %}
     <div class="food-grid" style="margin-top:1rem">
       {% for f in foods %}
@@ -84,12 +84,12 @@
 
   <div class="hc-section" id="foods-limit">
     <h2>Foods to Limit</h2>
-    <div class="hc-box-red">{{ condition.foods_to_limit|linebreaks }}</div>
+    <div class="hc-box-red">{{ condition.foods_to_limit|default:"Information for this section has not been published yet."|linebreaks }}</div>
   </div>
 
   <div class="hc-section" id="fruits">
     <h2>Fruits</h2>
-    <div class="hc-box">{{ condition.fruits_info|linebreaks }}</div>
+    <div class="hc-box">{{ condition.fruits_info|default:"Information for this section has not been published yet."|linebreaks }}</div>
     {% if fruits %}
     <div class="food-grid" style="margin-top:1rem">
       {% for f in fruits %}
@@ -104,7 +104,7 @@
 
   <div class="hc-section" id="vegetables">
     <h2>Vegetables</h2>
-    <div class="hc-box">{{ condition.vegetables_info|linebreaks }}</div>
+    <div class="hc-box">{{ condition.vegetables_info|default:"Information for this section has not been published yet."|linebreaks }}</div>
     {% if vegetables %}
     <div class="food-grid" style="margin-top:1rem">
       {% for v in vegetables %}
@@ -120,8 +120,8 @@
   <div class="hc-section" id="herbs">
     <h2>Herbs &amp; Spices</h2>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
-      <div class="hc-box"><strong style="color:#16a34a">Herbs</strong><br>{{ condition.herbs_info|linebreaks }}</div>
-      <div class="hc-box"><strong style="color:#16a34a">Spices</strong><br>{{ condition.spices_info|linebreaks }}</div>
+      <div class="hc-box"><strong style="color:#16a34a">Herbs</strong><br>{{ condition.herbs_info|default:"Information for this section has not been published yet."|linebreaks }}</div>
+      <div class="hc-box"><strong style="color:#16a34a">Spices</strong><br>{{ condition.spices_info|default:"Information for this section has not been published yet."|linebreaks }}</div>
     </div>
     {% if herbs %}
     <div class="food-grid" style="margin-top:1rem">
@@ -137,17 +137,17 @@
 
   <div class="hc-section" id="cooking">
     <h2>Cooking Methods</h2>
-    <div class="hc-box">{{ condition.cooking_methods|linebreaks }}</div>
+    <div class="hc-box">{{ condition.cooking_methods|default:"Information for this section has not been published yet."|linebreaks }}</div>
   </div>
 
   <div class="hc-section" id="timing">
     <h2>Meal Timing</h2>
-    <div class="hc-box">{{ condition.meal_timing|linebreaks }}</div>
+    <div class="hc-box">{{ condition.meal_timing|default:"Information for this section has not been published yet."|linebreaks }}</div>
   </div>
 
   <div class="hc-section" id="portion">
     <h2>Portion Guidance</h2>
-    <div class="hc-box">{{ condition.portion_guidance|linebreaks }}</div>
+    <div class="hc-box">{{ condition.portion_guidance|default:"Information for this section has not been published yet."|linebreaks }}</div>
   </div>
 
   {% if recipes %}

@@ -351,7 +351,7 @@ a{text-decoration:none;color:inherit}
   <!-- Right: user actions -->
   <div class="tb-right">
     {% if request.user.is_authenticated %}
-      <a href="/coupons/activate/" class="tb-icon-btn" title="Activate Gift Coupon — Gift Points"><i class="fas fa-ticket-alt" style="color:#f97316"></i></a>
+
       <a href="/{% if request.user.is_employer %}employer{% else %}jobseeker{% endif %}/dashboard/" class="tb-avatar-btn" title="{{ request.user.get_full_name|default:request.user.username }}">
         {% if profile_photo_url %}<img src="{{ profile_photo_url }}" alt="Profile photo" data-profile-avatar>{% else %}{{ request.user.get_full_name|default:request.user.username|slice:":1"|upper }}{% endif %}
       </a>
@@ -378,7 +378,7 @@ a{text-decoration:none;color:inherit}
   <a href="/advertise/register/"><i class="fas fa-bullhorn"></i> Promote Business</a>
   <a href="/portal/" style="background:linear-gradient(135deg,#eff6ff,#f0fdf4)"><i class="fas fa-users" style="color:#059669"></i> Communities (New)</a>
   {% if request.user.is_authenticated %}
-    <a href="/coupons/activate/"><i class="fas fa-ticket-alt" style="color:#f97316"></i> Gift Points</a>
+
     <a href="/{% if request.user.is_employer %}employer{% else %}jobseeker{% endif %}/dashboard/"><i class="fas fa-tachometer-alt"></i> {% if request.user.is_employer %}Business Dashboard{% else %}My Dashboard{% endif %}</a>
     <a href="/logout/"><i class="fas fa-sign-out-alt"></i> Logout</a>
   {% else %}
@@ -895,13 +895,13 @@ var olxAdCur = 0;
     <div class="footer-bottom">
       <p>&copy; 2026 OUR PINCODE. All rights reserved. &nbsp;|&nbsp; <i class="fas fa-map-marker-alt" style="color:#f97316"></i> India's Local Discovery &amp; Opportunity Platform</p>
       <div style="display:flex;align-items:center;gap:14px">
-        <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" aria-label="Facebook" style="color:rgba(255,255,255,.5);font-size:18px"><i class="fab fa-facebook-f"></i></a>
-        <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" aria-label="Instagram" style="color:rgba(255,255,255,.5);font-size:18px"><i class="fab fa-instagram"></i></a>
-        <a href="https://youtube.com" target="_blank" rel="noopener noreferrer" aria-label="Youtube" style="color:rgba(255,255,255,.5);font-size:18px"><i class="fab fa-youtube"></i></a>
-        <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" aria-label="Linkedin" style="color:rgba(255,255,255,.5);font-size:18px"><i class="fab fa-linkedin-in"></i></a>
+        {% include "includes/social_profiles.html" %}
+
+
+
         <a href="/health/" class="admin-footer-btn" title="Health"><i class="fas fa-heartbeat"></i></a>
         <a href="/vouchers/marketplace/" class="admin-footer-btn" title="Vouchers"><i class="fas fa-gift"></i></a>
-        {% if request.user.is_authenticated %}<a href="/coupons/activate/" class="admin-footer-btn" title="Gift Points"><i class="fas fa-ticket-alt"></i></a>{% endif %}
+        {% if request.user.is_authenticated %}{% endif %}
         <a href="/coupons/salesman/login/" class="admin-footer-btn" title="Salesman Login"><i class="fas fa-user-tie"></i></a>
         <button class="admin-footer-btn" onclick="openAdminPanel()" title="Admin"><i class="fas fa-shield-alt"></i></button>
       </div>

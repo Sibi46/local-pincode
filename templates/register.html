@@ -44,6 +44,7 @@
     </nav>
 
     <div class="register-wrapper">
+      <a href="/" class="registration-back" aria-label="Back from registration" onclick="return registrationBack(event)"><i class="fas fa-arrow-left" aria-hidden="true"></i> Back</a>
         {% if request.user.is_authenticated and request.user.company %}
         <section style="max-width:700px;margin:16px auto;padding:16px;background:#fff;border-radius:12px">
           <h2>My Business</h2>
@@ -239,7 +240,7 @@
 
           <!-- Register Your Business button -->
           <div id="regBizBtnWrap" style="max-width:700px;margin:0 auto 18px;padding:0 16px">
-            <button onclick="document.getElementById('regBizBtnWrap').style.display='none';document.getElementById('regBizForm').style.display='block';document.getElementById('regBizForm').scrollIntoView({behavior:'smooth'})"
+            <button type="button" onclick="openBusinessRegistration()"
               style="width:100%;background:linear-gradient(135deg,#0a66c2,#1d4ed8);color:#fff;border:none;border-radius:14px;padding:16px;font-size:16px;font-weight:900;cursor:pointer;box-shadow:0 4px 16px rgba(10,102,194,.3)">
               📣 Register Your Business
             </button>
@@ -247,7 +248,7 @@
 
           <div id="regBizForm" style="display:none">
             <div class="reg-card">
-                <button class="back-btn" onclick="goBack()" style="margin-bottom:16px"><i class="fas fa-arrow-left"></i> Back</button>
+                <button type="button" class="back-btn" onclick="goBack()" style="margin-bottom:16px"><i class="fas fa-arrow-left"></i> Back</button>
 
                 {% if existing_business %}
                 <!-- Already registered — prominent card at top -->
@@ -444,7 +445,7 @@
         <div class="reg-step hidden" id="step-individual_employer">
             <div class="reg-card">
                 <div class="reg-header">
-                    <button class="back-btn" onclick="goBack()"><i class="fas fa-arrow-left"></i> Back</button>
+                    <button type="button" class="back-btn" onclick="goBack()"><i class="fas fa-arrow-left"></i> Back</button>
                     <div class="type-badge orange"><i class="fas fa-user-plus"></i> Individual Employer</div>
                     <h2>Individual Employer Registration</h2>
                     <p>Hire domestic, personal or household staff near you</p>
@@ -537,7 +538,7 @@
         <div class="reg-step hidden" id="step-employee">
             <div class="reg-card">
                 <div class="reg-header">
-                    <button class="back-btn" onclick="goBack()"><i class="fas fa-arrow-left"></i> Back</button>
+                    <button type="button" class="back-btn" onclick="goBack()"><i class="fas fa-arrow-left"></i> Back</button>
                     <div class="type-badge green"><i class="fas fa-user-tie"></i> Job Seeker</div>
                     <h2>What type of job?</h2>
                     <p>Choose your job category to find the right opportunities</p>
@@ -561,7 +562,7 @@
         <div class="reg-step hidden" id="step-employee-form">
             <div class="reg-card">
                 <div class="reg-header">
-                    <button class="back-btn" onclick="goBack()"><i class="fas fa-arrow-left"></i> Back</button>
+                    <button type="button" class="back-btn" onclick="goBack()"><i class="fas fa-arrow-left"></i> Back</button>
                     <div class="type-badge green" id="emp-collar-badge"><i class="fas fa-user-tie"></i> Job Seeker</div>
                     <h2>Create Your Profile</h2>
                     <p>Fill in your details to find jobs near you</p>
@@ -656,7 +657,7 @@
         <div class="reg-step hidden" id="step-individual">
             <div class="reg-card">
                 <div class="reg-header">
-                    <button class="back-btn" onclick="goBack()"><i class="fas fa-arrow-left"></i> Back</button>
+                    <button type="button" class="back-btn" onclick="goBack()"><i class="fas fa-arrow-left"></i> Back</button>
                     <div class="type-badge orange"><i class="fas fa-user"></i> Individual</div>
                     <h2>Individual Registration</h2>
                     <p>Find local job opportunities</p>
@@ -725,7 +726,7 @@
         <div class="reg-step hidden" id="step-freelancer">
             <div class="reg-card">
                 <div class="reg-header">
-                    <button class="back-btn" onclick="goBack()"><i class="fas fa-arrow-left"></i> Back</button>
+                    <button type="button" class="back-btn" onclick="goBack()"><i class="fas fa-arrow-left"></i> Back</button>
                     <div class="type-badge red"><i class="fas fa-laptop"></i> Freelancer</div>
                     <h2>Freelancer Registration</h2>
                     <p>Offer your skills to local clients</p>
@@ -810,7 +811,7 @@
     body{padding-bottom:62px}
     </style>
 
-    <script src="{% static 'js/register.js' %}?v=13"></script>
+    <script src="{% static 'js/register.js' %}?v=14"></script>
 <script>
 function selectCollar(type) {
     document.getElementById('empCollarHidden').value = type;
