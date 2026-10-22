@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="/static/fontawesome/css/all.min.css">
     {% block extra_css %}{% endblock %}
 
+{% include "includes/site_ui.html" %}
 </head>
 <body>
 
@@ -52,7 +53,7 @@
                 <!-- Profile dropdown -->
                 <div class="nav-avatar-wrap">
                     <button class="nav-avatar-btn" onclick="toggleProfileMenu(event)" aria-label="Profile menu">
-                        {% with s=request.user.seeker %}{% if s and s.photo %}<img src="{{ s.photo.url }}" style="width:28px;height:28px;border-radius:50%;object-fit:cover;flex-shrink:0">{% else %}<i class="fas fa-user-circle"></i>{% endif %}{% endwith %}
+                        {% with s=request.user.seeker %}{% if profile_photo_url %}<img src="{{ profile_photo_url }}" alt="Profile photo" data-profile-avatar style="width:28px;height:28px;border-radius:50%;object-fit:cover;flex-shrink:0">{% else %}<i class="fas fa-user-circle"></i>{% endif %}{% endwith %}
                         <i class="fas fa-chevron-down nav-chevron"></i>
                     </button>
                     <div class="nav-profile-drop" id="profileDrop">
@@ -165,7 +166,7 @@
                 <!-- Profile dropdown -->
                 <div class="nav-avatar-wrap">
                     <button class="nav-avatar-btn" onclick="toggleProfileMenu(event)" aria-label="Profile menu">
-                        {% with s=request.user.seeker %}{% if s and s.photo %}<img src="{{ s.photo.url }}" style="width:28px;height:28px;border-radius:50%;object-fit:cover;flex-shrink:0">{% else %}<i class="fas fa-user-circle"></i>{% endif %}{% endwith %}
+                        {% with s=request.user.seeker %}{% if profile_photo_url %}<img src="{{ profile_photo_url }}" alt="Profile photo" data-profile-avatar style="width:28px;height:28px;border-radius:50%;object-fit:cover;flex-shrink:0">{% else %}<i class="fas fa-user-circle"></i>{% endif %}{% endwith %}
                         <i class="fas fa-chevron-down nav-chevron"></i>
                     </button>
                     <div class="nav-profile-drop" id="profileDrop">
@@ -741,30 +742,9 @@ if(document.addEventListener)document.addEventListener('keydown',function(e){if(
 
 <!-- ══ APP-STYLE BOTTOM NAV (mobile) ══════════════════════════ -->
 {% block site_bottom_nav %}
-<nav class="bottom-nav">
-  <div class="bottom-nav-inner">
-    <a href="{% url 'network_feed' %}" class="bn-item {% if '/network/' in request.path %}active{% endif %}"><i class="fas fa-user-friends"></i><span>My Ask</span></a>
-    <a href="/" class="bn-item {% if request.path == '/' %}active{% endif %}">
-      <i class="fas fa-home"></i><span>Home</span>
-    </a>
-    <a href="/advertise/" class="bn-item {% if '/advertise' in request.path %}active{% endif %}">
-      <span class="bn-offer-burst">OFFER</span><span>Offers</span>
-    </a>
-    <a href="/flicks/" class="bn-item bn-fab {% if '/flicks' in request.path %}bn-fab-active{% endif %}">
-      <div class="bn-fab-icon" style="background:none;box-shadow:none;padding:0;overflow:hidden"><img src="/static/images/reel.png" style="width:48px;height:48px;object-fit:cover;border-radius:50%;display:block"></div><span>Flick</span>
-    </a>
-    <a href="/vouchers/marketplace/" class="bn-item {% if '/vouchers' in request.path %}active{% endif %}">
-      <span style="font-size:22px;line-height:1">🎁</span><span>Voucher</span>
-    </a>
-    <a href="/health/" class="bn-item {% if '/health' in request.path %}active{% endif %}">
-      <i class="fas fa-heartbeat" style="font-size:19px"></i><span>Health</span>
-    </a>
-  </div>
-</nav>
+{% include "includes/navigation.html" %}
 {% block register_business_button %}
-<a href="/register/?type=company" class="bn-plus-btn" title="Register Business" aria-label="Register Business">
-  <i class="fas fa-plus"></i>
-</a>
+
 {% endblock register_business_button %}
 {% endblock site_bottom_nav %}
 

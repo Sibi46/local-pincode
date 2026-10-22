@@ -4,9 +4,7 @@
   <div class="site-ad-inner">
     {% for ad in ads_by_type.homepage_banner %}
     <a class="site-ad-slide {% if forloop.first %}active{% endif %}"
-       href="{{ ad.link_url|default:'#' }}"
-       target="{{ ad.link_url|yesno:'_blank,_self' }}"
-       onclick="fetch('/ads/click/{{ ad.pk }}/')">
+       href="/ads/click/{{ ad.pk }}/">
       <img src="{{ ad.image.url }}" alt="{{ ad.title }}">
       <div class="site-ad-info">
         <span class="site-ad-label">Sponsored</span>

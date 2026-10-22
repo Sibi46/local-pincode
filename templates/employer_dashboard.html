@@ -123,6 +123,7 @@
     .dsec-header h2  { font-size: 16px !important; }
   }
   </style>
+{% include "includes/site_ui.html" %}
 </head>
 <body>
 
@@ -1449,11 +1450,7 @@ function filterApps(status) {
 </script>
 
 <!-- BOTTOM NAV -->
-<nav class="bottom-nav">
-  <a href="/" class="bn-item" id="bn-home"><i class="fas fa-home"></i>Home</a>
-  <a href="/flicks/" class="bn-item bn-post"><div class="bn-post-circle" style="background:linear-gradient(135deg,#7c3aed,#0a66c2);box-shadow:0 4px 14px rgba(124,58,237,.45)"><i class="fas fa-bolt"></i></div><span>Flicks</span></a>
-<a href="/employer/dashboard/" class="bn-item" id="bn-profile" onclick="showSection('my-profile');updateBnActive('my-profile');return false"><i class="fas fa-user-circle"></i>My Profile</a>
-</nav>
+{% include "includes/navigation.html" %}
 <script>
 function updateBnActive(key){
   document.querySelectorAll('.bn-item:not(.bn-post)').forEach(function(el){el.classList.remove('active')});

@@ -1,0 +1,8 @@
+{% load static %}
+<link rel="icon" href="{% static 'images/favicon.ico' %}?v=2" sizes="16x16 32x32 48x48">
+<link rel="apple-touch-icon" href="{% static 'images/favicon.png' %}">
+<script>
+try{document.documentElement.dataset.theme=localStorage.getItem('opc-theme')||'light';}catch(e){document.documentElement.dataset.theme='light';}
+</script>
+<link rel="stylesheet" href="{% static 'css/site-ui.css' %}?v=1">
+<script src="{% static 'js/site-ui.js' %}?v=1" defer></script>

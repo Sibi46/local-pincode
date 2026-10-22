@@ -2013,7 +2013,7 @@ def advertiser_register(request):
     user = request.user
 
     if not user.is_authenticated:
-        return redirect(f'/login/?next=/advertise/register/')
+        return render(request, 'advertise_start.html')
 
     # Block non-employer users
     if not user.is_employer():
@@ -2228,13 +2228,14 @@ def ad_click_track(request, ad_id):
     """Tracks click and redirects to destination."""
     try:
         ad = Advertisement.objects.get(pk=ad_id, status='active')
-        Advertisement.objects.filter(pk=ad_id).update(clicks=ad.clicks + 1)
-        safe_url = _safe_ad_url(ad.link_url)
+        Advertisement.objects.filter(pk=ad_id).update(clicks=F('clicks') + 1)
+        safe_url = _sponsor_website(request, ad.link_url)
         if safe_url:
             return redirect(safe_url)
+        return redirect('sponsored_ad_detail', ad_id=ad.pk)
     except Advertisement.DoesNotExist:
         pass
-    return redirect('home')
+    return redirect('ads_gallery')
 
 
 def adpost_click_track(request, ad_id):
@@ -2243,12 +2244,45 @@ def adpost_click_track(request, ad_id):
     try:
         ad = AdPost.objects.get(pk=ad_id, status='approved')
         AdPost.objects.filter(pk=ad_id).update(clicks=F('clicks') + 1)
-        safe_url = _safe_ad_url(ad.website)
+        safe_url = _sponsor_website(request, ad.website)
         if safe_url:
             return redirect(safe_url)
+        return redirect('sponsored_post_detail', ad_id=ad.pk)
     except AdPost.DoesNotExist:
         pass
-    return redirect('home')
+    return redirect('ads_gallery')
+
+
+def _sponsor_website(request, value):
+    """Use valid websites while avoiding circular homepage ad destinations."""
+    from urllib.parse import urlsplit
+    safe = _safe_ad_url(value)
+    if safe:
+        destination = urlsplit(safe)
+        current_host = request.get_host().split(':')[0].removeprefix('www.')
+        if (destination.hostname or '').removeprefix('www.') == current_host and destination.path in ('', '/'):
+            return None
+    return safe
+
+
+def sponsored_detail(request, ad_id, kind):
+    if kind == 'post':
+        ad = get_object_or_404(AdPost.objects.select_related('user__company'), pk=ad_id, status='approved')
+        title, description, image, owner, website = ad.company_name, ad.description, ad.image, ad.user, ad.website
+        phone = getattr(owner, 'phone', '')
+    elif kind == 'banner':
+        ad = get_object_or_404(Advertiser.objects.select_related('user__company'), pk=ad_id, status='approved')
+        title, description, image, owner, website = ad.business_name, ad.description, ad.banner_image, ad.user, ad.website
+        phone = ad.phone
+    else:
+        ad = get_object_or_404(Advertisement.objects.select_related('advertiser__user__company'), pk=ad_id, status='active')
+        title, description, image, owner, website = ad.title, ad.content, ad.image, ad.advertiser.user, ad.link_url
+        phone = ad.advertiser.phone
+    return render(request, 'sponsored_detail.html', {
+        'sponsor_title': title, 'sponsor_description': description, 'sponsor_image': image,
+        'sponsor_company': getattr(owner, 'company', None),
+        'sponsor_website': _sponsor_website(request, website), 'sponsor_phone': phone,
+    })
 
 
 # ── ADMIN: Advertiser Management ─────────────────────────────────────────────
@@ -3468,7 +3502,9 @@ def about_page(request):
 
 
 def favicon(request):
-    return HttpResponse(status=204)
+    from django.contrib.staticfiles import finders
+    from django.http import FileResponse
+    return FileResponse(open(finders.find('images/favicon.ico'), 'rb'), content_type='image/x-icon')
 
 
 # ── FLICKS ────────────────────────────────────────────────────────────────────
@@ -3956,8 +3992,8 @@ def profile_edit(request):
     user = request.user
     company = getattr(user, 'company', None)
 
-    # Auto-create seeker profile for individual/employee/freelancer
-    if user.user_type in ('individual', 'employee', 'freelancer'):
+    # All account types can keep a personal avatar independently of a business logo.
+    if user.user_type in ('individual', 'employee', 'freelancer') or 'photo' in request.FILES:
         seeker, _ = JobSeekerProfile.objects.get_or_create(user=user)
     else:
         seeker = getattr(user, 'seeker', None)

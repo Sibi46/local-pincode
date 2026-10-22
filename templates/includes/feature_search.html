@@ -1,0 +1,14 @@
+<div class="home-search">
+  <form action="/" method="get" class="opc-feature-search" id="featureSearchForm" role="search">
+    <label class="opc-search-label" for="homeSearchInput">Find a feature</label>
+    <div class="home-search-inner">
+      <i class="fas fa-search" aria-hidden="true"></i>
+      <input type="search" name="feature" placeholder="Search features: jobs, quiz, health, offers..." id="homeSearchInput" value="{{ feature_query }}" aria-controls="featureSearchResults" autocomplete="off">
+      <button class="home-search-filter" type="submit">Search</button>
+    </div>
+    <div id="featureSearchResults" class="opc-feature-results" aria-live="polite" {% if not feature_query %}hidden{% endif %}>
+      {% for feature in feature_matches %}<a href="{{ feature.url }}"><span><strong>{{ feature.name }}</strong><small>{{ feature.keywords }}</small></span></a>{% empty %}{% if feature_query %}<p>No features found. Try jobs, quiz, offers or health.</p>{% endif %}{% endfor %}
+    </div>
+  </form>
+</div>
+{{ feature_catalog|json_script:"feature-catalog" }}

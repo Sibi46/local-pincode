@@ -93,6 +93,9 @@ urlpatterns = [
     # Advertiser — Public
     path('smart-marketing/',                  views.smart_marketing_story,    name='smart_marketing_story'),
     path('advertise/',                        views.ads_gallery,              name='ads_gallery'),
+    path('advertise/sponsored/<int:ad_id>/', views.sponsored_detail, {'kind': 'post'}, name='sponsored_post_detail'),
+    path('advertise/ad/<int:ad_id>/', views.sponsored_detail, {'kind': 'ad'}, name='sponsored_ad_detail'),
+    path('advertise/business/<int:ad_id>/', views.sponsored_detail, {'kind': 'banner'}, name='sponsored_banner_detail'),
     path('advertise/register/',               views.advertiser_register,      name='advertiser_register'),
     path('advertise/success/',                views.advertiser_register_success, name='advertiser_register_success'),
     path('offers/post/',                      views.offer_post,               name='offer_post'),

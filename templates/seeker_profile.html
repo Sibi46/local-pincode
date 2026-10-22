@@ -7,6 +7,7 @@
 <title>My Profile — OUR PINCODE Jobs</title>
 <link rel="stylesheet" href="/static/fontawesome/css/all.min.css">
 <link rel="stylesheet" href="/static/css/seeker_profile.css?v=2">
+{% include "includes/site_ui.html" %}
 </head>
 <body>
 
@@ -983,13 +984,7 @@ function renderPrefPinTags() {
 <script src="/static/js/pincode_lookup.js?v=1"></script>
 
 <!-- ══ BOTTOM NAV ══════════════════════════════════════════════════════ -->
-<nav class="bottom-nav">
-  <div class="bottom-nav-inner">
-    <a href="/" class="bn-item"><i class="fas fa-home"></i><span>Home</span></a>
-    <a href="/flicks/" class="bn-item bn-fab"><div class="bn-fab-icon bn-fab-flick"><i class="fas fa-bolt"></i></div><span>Flicks</span></a>
-    <a href="/profile/" class="bn-item active"><i class="fas fa-user"></i><span>Profile</span></a>
-  </div>
-</nav>
+{% include "includes/navigation.html" %}
 
 <style>
 .bottom-nav{display:block;position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #eee;box-shadow:0 -2px 16px rgba(0,0,0,.08);z-index:998;padding:6px 0 4px}

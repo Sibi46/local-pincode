@@ -326,6 +326,7 @@ a{text-decoration:none;color:inherit}
 </style>
 <link rel="stylesheet" href="{% static 'css/home-refresh.css' %}?v=qa-layout-1">
 <script src="{% static 'js/home-refresh.js' %}?v=diwali-2" defer></script>
+{% include "includes/site_ui.html" %}
 </head>
 <body>
 
@@ -352,7 +353,7 @@ a{text-decoration:none;color:inherit}
     {% if request.user.is_authenticated %}
       <a href="/coupons/activate/" class="tb-icon-btn" title="Activate Gift Coupon — Gift Points"><i class="fas fa-ticket-alt" style="color:#f97316"></i></a>
       <a href="/{% if request.user.is_employer %}employer{% else %}jobseeker{% endif %}/dashboard/" class="tb-avatar-btn" title="{{ request.user.get_full_name|default:request.user.username }}">
-        {{ request.user.get_full_name|default:request.user.username|slice:":1"|upper }}
+        {% if profile_photo_url %}<img src="{{ profile_photo_url }}" alt="Profile photo" data-profile-avatar>{% else %}{{ request.user.get_full_name|default:request.user.username|slice:":1"|upper }}{% endif %}
       </a>
     {% else %}
       <a href="#regPop" class="tb-icon-btn" title="Create account" aria-label="Create account" aria-haspopup="dialog" onclick="window._regNextUrl=null;document.getElementById('regPop').classList.add('show');return false;"><i class="fas fa-user" aria-hidden="true"></i></a>
@@ -362,13 +363,8 @@ a{text-decoration:none;color:inherit}
 </div>
 
 <!-- SEARCH BAR (mobile) -->
-<div class="home-search">
-  <div class="home-search-inner">
-    <i class="fas fa-search"></i>
-    <input type="text" placeholder="Search jobs near you…" id="homeSearchInput" onkeydown="if(event.key==='Enter'){var q=this.value.trim();if(q)window.location='/jobs/?q='+encodeURIComponent(q)}">
-    <button class="home-search-filter" onclick="var q=document.getElementById('homeSearchInput').value.trim();if(q)window.location='/jobs/?q='+encodeURIComponent(q)">Search</button>
-  </div>
-</div>
+{% include "includes/feature_search.html" %}
+<script src="{% static 'js/feature-search.js' %}?v=1" defer></script>
 
 <!-- MOBILE MENU -->
 <div class="mob-menu" id="mobMenu">
@@ -398,7 +394,7 @@ a{text-decoration:none;color:inherit}
   <div style="position:relative;border-radius:18px;overflow:hidden;box-shadow:0 6px 28px rgba(0,0,0,.18);max-width:640px;margin:0 auto" id="heroSlider">
 
     {% for adv in advertiser_banners %}
-    <a class="hero-ad-slide {% if forloop.first %}active{% endif %}" href="{% if adv.website %}{{ adv.website }}{% else %}#{% endif %}" target="_blank" rel="noopener" style="display:none;text-decoration:none;position:relative;display:none">
+    <a class="hero-ad-slide {% if forloop.first %}active{% endif %}" href="{% url 'sponsored_banner_detail' adv.pk %}" style="display:none;text-decoration:none;position:relative;display:none">
       <img src="{{ adv.banner_image.url }}" alt="{{ adv.business_name }}" style="width:100%;height:200px;object-fit:cover;display:block">
       <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.72) 40%,rgba(0,0,0,.1) 100%)"></div>
       <div style="position:absolute;top:10px;left:12px;background:rgba(29,78,216,.9);color:#fff;font-size:9px;font-weight:800;padding:3px 10px;border-radius:20px;letter-spacing:.6px;text-transform:uppercase">Sponsored</div>
@@ -410,7 +406,7 @@ a{text-decoration:none;color:inherit}
     {% endfor %}
 
     {% for ad in live_ads %}
-    <a class="hero-ad-slide {% if forloop.first and not advertiser_banners %}active{% endif %}" href="/ads/adpost-click/{{ ad.pk }}/" target="_blank" rel="noopener" style="display:none;text-decoration:none;position:relative">
+    <a class="hero-ad-slide {% if forloop.first and not advertiser_banners %}active{% endif %}" href="/ads/adpost-click/{{ ad.pk }}/" style="display:none;text-decoration:none;position:relative">
       <img src="{{ ad.image.url }}" alt="{{ ad.company_name }}" style="width:100%;height:200px;object-fit:cover;display:block">
       <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.72) 40%,rgba(0,0,0,.1) 100%)"></div>
       <div style="position:absolute;top:10px;left:12px;background:rgba(239,68,68,.9);color:#fff;font-size:9px;font-weight:800;padding:3px 10px;border-radius:20px;letter-spacing:.6px;text-transform:uppercase">Sponsored</div>
@@ -460,7 +456,7 @@ var heroAdCur = 0;
 <section class="hp-sponsored-section"><p class="hp-sponsor-heading">From local businesses · Sponsored</p>
   <div style="position:relative;border-radius:18px;overflow:hidden;box-shadow:0 6px 28px rgba(0,0,0,.18);max-width:640px;margin:0 auto" id="heroSlider2">
     {% for adv in advertiser_banners %}
-    <a class="hero-ad-slide2 {% if forloop.first %}active{% endif %}" href="{% if adv.website %}{{ adv.website }}{% else %}#{% endif %}" target="_blank" rel="noopener" style="display:none;text-decoration:none;position:relative">
+    <a class="hero-ad-slide2 {% if forloop.first %}active{% endif %}" href="{% url 'sponsored_banner_detail' adv.pk %}" style="display:none;text-decoration:none;position:relative">
       <img src="{{ adv.banner_image.url }}" alt="{{ adv.business_name }}" style="width:100%;height:200px;object-fit:cover;display:block">
       <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.72) 40%,rgba(0,0,0,.1) 100%)"></div>
       <div style="position:absolute;top:10px;left:12px;background:rgba(29,78,216,.9);color:#fff;font-size:9px;font-weight:800;padding:3px 10px;border-radius:20px;letter-spacing:.6px;text-transform:uppercase">Sponsored</div>
@@ -471,7 +467,7 @@ var heroAdCur = 0;
     </a>
     {% endfor %}
     {% for ad in live_ads %}
-    <a class="hero-ad-slide2 {% if forloop.first and not advertiser_banners %}active{% endif %}" href="/ads/adpost-click/{{ ad.pk }}/" target="_blank" rel="noopener" style="display:none;text-decoration:none;position:relative">
+    <a class="hero-ad-slide2 {% if forloop.first and not advertiser_banners %}active{% endif %}" href="/ads/adpost-click/{{ ad.pk }}/" style="display:none;text-decoration:none;position:relative">
       <img src="{{ ad.image.url }}" alt="{{ ad.company_name }}" style="width:100%;height:200px;object-fit:cover;display:block">
       <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.72) 40%,rgba(0,0,0,.1) 100%)"></div>
       <div style="position:absolute;top:10px;left:12px;background:rgba(239,68,68,.9);color:#fff;font-size:9px;font-weight:800;padding:3px 10px;border-radius:20px;letter-spacing:.6px;text-transform:uppercase">Sponsored</div>
@@ -684,7 +680,7 @@ var olxAdCur = 0;
 </section>
 
 <!-- FEATURE SHOWCASE -->
-<section style="max-width:680px;margin:24px auto;padding:0 16px">
+<section class="hp-feature-showcase" style="max-width:680px;margin:24px auto;padding:0 16px">
   <a href="{% url 'newsdesk:feed' %}" style="display:block;padding:25px;margin-bottom:18px;border:1px solid #cdded9;border-radius:18px;background:#f7f6f1;color:#172c32;text-decoration:none">
     <span style="font-size:12px;font-weight:800;letter-spacing:2px;color:#087f78">OURPINCODE NEWS DESK</span>
     <h2 style="font-size:25px;margin:10px 0">Big stories. Local heartbeat.</h2>
@@ -1103,23 +1099,7 @@ var olxAdCur = 0;
 </script>
 
 <!-- BOTTOM NAV -->
-<nav class="bottom-nav">
-  <div class="bottom-nav-inner">
-    <a href="/community/family/" class="bn-item active"><span style="font-size:22px;line-height:1">👨‍👩‍👧‍👦</span><span>Family</span></a>
-    <a href="/advertise/" class="bn-item">
-      <span class="bn-offer-burst">OFFER</span>
-      <span>Offers</span>
-    </a>
-    <a href="/flicks/" class="bn-item bn-fab">
-      <div class="bn-fab-icon" style="background:none;box-shadow:none;padding:0;overflow:hidden">
-        <img src="/static/images/reel.png" style="width:48px;height:48px;object-fit:cover;border-radius:50%;display:block">
-      </div>
-      <span>Flick</span>
-    </a>
-    <a href="/vouchers/marketplace/" class="bn-item"><span style="font-size:22px;line-height:1">🎁</span><span>Voucher</span></a>
-    <a href="/jobs/" class="bn-item"><span style="font-size:22px;line-height:1">🔍</span><span>Jobs</span></a>
-  </div>
-</nav>
+{% include "includes/navigation.html" %}
 
 <script src="{% static 'js/main.js' %}?v=2"></script>
 <script>

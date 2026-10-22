@@ -10,7 +10,7 @@
       <p class="diwali-message">Light up your neighbourhood with love &amp; local discoveries.</p>
     </div>
     <div class="hp-promo-stage">
-      <a class="hp-promo-slide" href="{% if request.user.is_authenticated and request.user.advertiser.status == 'approved' %}/advertise/dashboard/{% else %}/advertise/register/{% endif %}" data-promo-slide>Post your <em>shop ads.</em></a>
+      <a class="hp-promo-slide" href="{% if request.user.is_authenticated and request.user.advertiser.status == 'approved' %}/advertiser/dashboard/{% else %}/advertise/register/{% endif %}" data-promo-slide>Post your <em>shop ads.</em></a>
       <a class="hp-promo-slide" href="/offers/post/" data-promo-slide hidden>Post your <em>Diwali offers.</em></a>
       <a class="hp-promo-slide" href="/vouchers/marketplace/" data-promo-slide hidden><em>Gift vouchers.</em></a>
     </div>
@@ -25,7 +25,7 @@
     <a class="hp-tile hp-mint" href="{% url 'network_feed' %}"><span>👥</span><strong>My Ask</strong></a>
   </div>
   <button class="hp-explore-trigger" type="button" data-explore-open aria-haspopup="dialog"><span class="hp-explore-icon" aria-hidden="true">✦</span><span><strong>Explore more</strong><small>Show all sections · Jobs, Family, Health &amp; more</small></span><span aria-hidden="true">↗</span></button>
-  <aside class="hp-advertise"><span class="hp-megaphone" aria-hidden="true">📣</span><div><h2>Advertise your business</h2><p>Promote your offers.</p></div><a href="{% if request.user.is_authenticated and request.user.advertiser.status == 'approved' %}/advertise/dashboard/{% else %}/advertise/register/{% endif %}">Get started <span aria-hidden="true">↗</span></a></aside>
+  <aside class="hp-advertise"><span class="hp-megaphone" aria-hidden="true">📣</span><div><h2>Advertise your business</h2><p>Promote your offers.</p></div><a href="{% if request.user.is_authenticated and request.user.advertiser.status == 'approved' %}/advertiser/dashboard/{% else %}/advertise/register/{% endif %}">Get started <span aria-hidden="true">↗</span></a></aside>
 </section>
 <dialog id="home-explore" class="hp-dialog" aria-labelledby="hp-explore-title">
   <div class="hp-dialog-header"><div><p class="hp-eyebrow">A LITTLE CLOSER TO HOME</p><h2 id="hp-explore-title">Explore your pincode</h2></div><button type="button" data-explore-close aria-label="Close Explore">✕</button></div>

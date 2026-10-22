@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="{% static 'css/post_job.css' %}?v=6">
   <link rel="stylesheet" href="{% static 'css/bottom_nav.css' %}?v=3">
   <link rel="stylesheet" href="/static/fontawesome/css/all.min.css">
+{% include "includes/site_ui.html" %}
 </head>
 <body class="pj-body">
 
@@ -1215,12 +1216,7 @@ function submitForm(action) {
 <script>document.addEventListener('DOMContentLoaded', initMap);</script>
 
 <!-- BOTTOM NAV -->
-<nav class="bottom-nav">
-  <a href="/employer/dashboard/" class="bn-item"><i class="fas fa-home"></i>Home</a>
-  <a href="/flicks/" class="bn-item bn-post"><div class="bn-post-circle" style="background:linear-gradient(135deg,#7c3aed,#0a66c2);box-shadow:0 4px 14px rgba(124,58,237,.45)"><i class="fas fa-bolt"></i></div><span>Flicks</span></a>
-  <a href="/messages/" class="bn-item"><i class="fas fa-comment-dots"></i>Messages</a>
-  <a href="/employer/dashboard/" class="bn-item"><i class="fas fa-user-circle"></i>My Profile</a>
-</nav>
+{% include "includes/navigation.html" %}
 <script>
 document.addEventListener('DOMContentLoaded',function(){
   document.querySelectorAll('input[type="tel"]').forEach(function(inp){

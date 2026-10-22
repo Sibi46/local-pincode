@@ -54,6 +54,7 @@
     .dash-hamburger{display:flex!important}
   }
   </style>
+{% include "includes/site_ui.html" %}
 </head>
 <body class="dash-body">
 
@@ -63,7 +64,7 @@
   <div class="dash-topbar-right">
     {% if request.user.is_authenticated %}
     <div class="dash-avatar-wrap">
-      <div class="dash-avatar">{{ request.user.get_full_name|first|upper|default:request.user.username|first|upper }}</div>
+      <div class="dash-avatar">{% if profile_photo_url %}<img src="{{ profile_photo_url }}" alt="Profile photo" data-profile-avatar>{% else %}{{ request.user.get_full_name|first|upper|default:request.user.username|first|upper }}{% endif %}</div>
       <div class="dash-avatar-menu">
         {% if request.user.is_employer %}
         <a href="/employer/dashboard/"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
@@ -90,8 +91,8 @@
       <div style="display:flex;justify-content:center;margin-bottom:12px">
         <label for="photoInput" style="cursor:pointer;display:block">
         <div class="pe-avatar-circle" id="sidebarAvatar">
-          {% if seeker and seeker.photo %}
-          <img src="{{ seeker.photo.url }}" id="avatarPreview">
+          {% if profile_photo_url %}
+          <img src="{{ profile_photo_url }}" id="avatarPreview" alt="Profile photo" data-profile-avatar>
           {% else %}
           <span id="avatarInitial">{{ request.user.first_name|first|upper|default:request.user.username|first|upper }}</span>
           {% endif %}
@@ -491,7 +492,7 @@ function _cropApply() {
   const ratio = 300 / size;
   ctx.drawImage(_cropImg, _cropX*ratio, _cropY*ratio, _cropImg.width*_cropScale*ratio, _cropImg.height*_cropScale*ratio);
   out.toBlob(blob => {
-    const file = new File([blob], _cropOrigFile.name, {type:'image/jpeg'});
+    const file = new File([blob], 'profile-photo.jpg', {type:'image/jpeg'});
     // replace file in input
     const dt = new DataTransfer();
     dt.items.add(file);
@@ -500,6 +501,7 @@ function _cropApply() {
     const url = URL.createObjectURL(blob);
     const sidebar = document.getElementById('sidebarAvatar');
     sidebar.innerHTML = '<img src="'+url+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block"><div class="cam-overlay"><i class="fas fa-camera"></i></div>';
+    document.querySelectorAll('[data-profile-avatar]').forEach(img => {img.src=url;});
     document.getElementById('crop-modal').style.display = 'none';
   }, 'image/jpeg', 0.92);
 }
@@ -600,5 +602,6 @@ function lookupPincode(pin) {
 })();
 </script>
 
+{% include "includes/navigation.html" %}
 </body>
 </html>

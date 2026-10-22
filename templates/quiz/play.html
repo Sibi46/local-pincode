@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% block title %}Quiz ? OUR PINCODE{% endblock %}
+{% block title %}Quiz - OUR PINCODE{% endblock %}
 {% block extra_css %}
 <style>
 #quiz-form fieldset{min-width:0}#quiz-form label{cursor:pointer;border-bottom:1px solid #eee}#quiz-form label:has(input:checked){background:#eef2ff}#quiz-form button,#quiz-next,main .btn-visit{background:#4f46e5;color:#fff;border:0;border-radius:10px;font-weight:700;cursor:pointer}#quiz-status{margin:16px 0;line-height:1.6}#quiz-form button:disabled{opacity:.6;cursor:wait}main h1{margin:16px 0}
@@ -7,12 +7,12 @@
 {% endblock %}
 {% block content %}
 <main style="max-width:640px;margin:32px auto;padding:20px">
-<a href="/">? Home</a><h1>Test your knowledge</h1>
+<a href="/"><i class="fas fa-arrow-left" aria-hidden="true"></i> Home</a><h1>Test your knowledge</h1>
 {% if request.user.is_authenticated %}
 <p>Answer quizzes from businesses in your profile pincode.</p>
 {% if request.user.is_employer %}<p><a href="{% url 'quiz_list' %}">Manage my quizzes</a></p>{% endif %}
 {% csrf_token %}
-<p id="quiz-status" role="status">Loading a question?</p>
+<p id="quiz-status" role="status">Loading a question...</p>
 <form id="quiz-form" hidden>
 <fieldset style="padding:20px;border:1px solid #ddd;border-radius:12px"><legend id="quiz-question"></legend><img id="quiz-image" hidden alt="Question illustration" style="max-width:100%;max-height:240px"><div id="quiz-options"></div></fieldset>
 <button type="submit" class="btn-visit" style="padding:12px;margin-top:16px">Submit answer</button>

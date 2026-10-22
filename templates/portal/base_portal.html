@@ -238,6 +238,7 @@ select.pform-input{background:#fff}
 }
 </style>
 {% block extra_css %}{% endblock %}
+{% include "includes/site_ui.html" %}
 </head>
 <body>
 
@@ -622,5 +623,6 @@ document.addEventListener('DOMContentLoaded', function(){
 })();
 </script>
 {% include "includes/quiz_popup.html" %}
+{% include "includes/navigation.html" %}
 </body>
 </html>
