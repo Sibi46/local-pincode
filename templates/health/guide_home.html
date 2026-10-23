@@ -182,11 +182,11 @@
     {% for item in items %}
     <a class="food-bubble" href="/health/guide/{{ item.category.slug }}/{{ item.slug }}/">
       {% if item.image %}
-        <img class="food-bubble-img" src="{{ item.image.url }}" alt="{{ item.name }}">
+        <img class="food-bubble-img" src="{{ item.image.url }}" alt="{{ item.name|title }}">
       {% else %}
         <div class="food-bubble-ph">{{ item.category.icon }}</div>
       {% endif %}
-      <span class="food-bubble-name">{{ item.name }}</span>
+      <span class="food-bubble-name">{{ item.name|title }}</span>
     </a>
     {% endfor %}
   </div>
@@ -248,12 +248,12 @@
          href="/health/guide/{{ item.category.slug }}/{{ item.slug }}/"
          data-conditions="{{ item.condition_slugs }}">
         {% if item.image %}
-          <img class="food-card-img" src="{{ item.image.url }}" alt="{{ item.name }}" loading="lazy">
+          <img class="food-card-img" src="{{ item.image.url }}" alt="{{ item.name|title }}" loading="lazy">
         {% else %}
           <div class="food-card-ph">{{ item.category.icon }}</div>
         {% endif %}
         <div class="food-card-body">
-          <div class="food-card-name">{{ item.name }}</div>
+          <div class="food-card-name">{{ item.name|title }}</div>
           <div class="food-card-cat">{{ item.category.icon }} {{ item.category.name }}</div>
         </div>
       </a>

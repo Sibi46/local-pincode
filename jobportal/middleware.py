@@ -67,6 +67,11 @@ class LoginRequiredMiddleware:
                 except Resolver404:
                     pass
 
+            # Offer merchant detail pages are public; posting and management remain protected.
+            import re
+            if re.fullmatch(r'/offers/[0-9]+/store/', path):
+                return self.get_response(request)
+
             # Allow exact home
             if path in {'/', '/favicon.ico', '/robots.txt', '/sitemap.xml'} or path.startswith('/sitemaps/'):
                 return self.get_response(request)

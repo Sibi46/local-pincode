@@ -416,7 +416,7 @@ function uCopyLink(){
   });
 }
 // Native share API (mobile)
-document.querySelector('.u-share-fab').addEventListener('click', function(e){
+document.querySelector('.u-share-fab')?.addEventListener('click', function(e){
   if(navigator.share){
     e.stopPropagation();
     navigator.share({
@@ -616,6 +616,7 @@ document.addEventListener('DOMContentLoaded', function(){
     start();
   });
   document.addEventListener('submit',function(e){
+    if(e.defaultPrevented)return;
     if(e.target&&e.target.tagName==='FORM'&&e.target.method!=='dialog')start();
   });
   window.addEventListener('pageshow',finish);

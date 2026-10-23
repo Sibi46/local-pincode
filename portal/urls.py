@@ -24,6 +24,7 @@ urlpatterns = [
     path('c/<str:page_id>/nominations/',        views.nominations_step,       name='portal_nominations_step'),
     path('c/<str:page_id>/',                    views.community_page,         name='portal_community'),
     path('c/<str:page_id>/join/',               views.join_community,         name='portal_join'),
+    path('c/<str:page_id>/membership-status/', views.membership_status, name='portal_membership_status'),
     path('c/<str:page_id>/edit/',               views.edit_community,         name='portal_edit_community'),
     path('c/<str:page_id>/dashboard/',          views.community_dashboard,    name='portal_dashboard'),
     path('c/<str:page_id>/members/',            views.manage_members,         name='portal_manage_members'),

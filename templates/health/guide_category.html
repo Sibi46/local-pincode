@@ -56,12 +56,12 @@
     {% for item in items %}
     <a class="item-card" href="/health/guide/{{ category.slug }}/{{ item.slug }}/">
       {% if item.image %}
-      <img class="item-card-img" src="{{ item.image.url }}" alt="{{ item.name }}">
+      <img class="item-card-img" src="{{ item.image.url }}" alt="{{ item.name|title }}">
       {% else %}
       <div class="item-card-icon">{{ category.icon }}</div>
       {% endif %}
       <div class="item-card-body">
-        <h3>{{ item.name }}</h3>
+        <h3>{{ item.name|title }}</h3>
         {% if item.description %}<p>{{ item.description }}</p>{% endif %}
         {% if item.is_featured %}<div class="item-featured">⭐ Featured</div>{% endif %}
         <span class="view-btn">View Details →</span>

@@ -12,7 +12,7 @@
   </button>
   <div class="offer-actions">
     <button type="button" onclick="openOffer({{ o.pk }})">Details</button>
-    {% if o.owner.company.company_id %}<a href="{% url 'business_profile' o.owner.company.company_id %}">Visit Store</a>{% elif o.link_url %}<a href="{{ o.link_url }}">Visit Store</a>{% endif %}
+    <a href="{{ o.store_url }}">Visit Store</a>
     <button type="button" onclick="shareOffer('{{ o.business_name|escapejs }}','{{ o.title|escapejs }}','{{ o.discount_text|escapejs }}','{{ o.contact_phone|escapejs }}','{{ o.pk }}')" aria-label="Share {{ o.title }}">Share</button>
   </div>
 </article>

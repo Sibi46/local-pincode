@@ -49,3 +49,12 @@ html[data-theme=dark] :is(.gi-tabs-bar,.gi-sidebar .info-card,.hc-box,.hc-box-re
 @media(max-width:840px){.gi-body .gi-sidebar{display:none;}.gi-tabs-bar .gtab-btn{font-size:12px;}}
 
 .gi-hero-inner .gi-hero-info{flex:1;min-width:0}.gi-hero-inner .opc-theme-toggle{margin-left:auto}
+
+/* Keep a portrait reel proportional instead of stretching it across a desktop column. */
+.gi-body.gi-balanced {max-width:940px; grid-template-columns:minmax(0,460px) minmax(220px,300px); justify-content:center;}
+.gi-body .reel-feed {width:100%; max-width:calc((100svh - 240px) * 9 / 16); justify-self:center;}
+.gi-breadcrumb {max-width:940px; margin:0 auto; padding:12px 16px 0; color:var(--opc-muted); font-size:13px; line-height:1.6; overflow-wrap:anywhere;}
+.gi-breadcrumb a {color:var(--opc-accent);}
+@media(max-width:840px){.gi-body.gi-balanced{grid-template-columns:minmax(0,1fr);}.gi-body .reel-feed{max-width:460px;}}
+
+.gi-body.gi-single{grid-template-columns:minmax(0,460px);max-width:520px}

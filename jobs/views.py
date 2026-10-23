@@ -1951,8 +1951,12 @@ def ads_gallery(request):
     offers_qs = LocalOffer.objects.filter(is_active=True).select_related('owner__company')
     if cat:
         offers_qs = offers_qs.filter(category=cat)
+    from .offer_links import business_directory, attach_offer_links
+    directory = business_directory()
     flash_offers  = offers_qs.filter(is_flash=True)
     normal_offers = offers_qs.filter(is_flash=False)
+    for offer in list(flash_offers) + list(normal_offers):
+        attach_offer_links(offer, directory)
     return render(request, 'ads_gallery.html', {
         'ads':               ads,
         'advertiser_banners': advertiser_banners,
@@ -2006,6 +2010,14 @@ def offer_post(request):
 
 def offer_post_success(request):
     return render(request, 'offer_post_success.html')
+
+
+def offer_store(request, pk):
+    from .offer_links import attach_offer_links
+    offer = attach_offer_links(get_object_or_404(LocalOffer, pk=pk, is_active=True))
+    if offer.store_profile:
+        return redirect(offer.store_url)
+    return render(request, 'offer_store.html', {'offer': offer})
 
 
 def advertiser_register(request):

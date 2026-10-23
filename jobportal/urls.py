@@ -42,6 +42,7 @@ urlpatterns = [
     # Business Public Profile
     path('businesses/', views.business_list, name='business_list'),
     path('offers/mine/', views.my_offers, name='my_offers'),
+    path('offers/<int:pk>/store/', views.offer_store, name='offer_store'),
     path('business/<str:company_id>/', views.business_profile, name='business_profile'),
 
     # Jobs

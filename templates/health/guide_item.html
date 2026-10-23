@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 {% load health_extras %}
-{% block title %}{{ item.name }} – {{ category.name }} – Food Guide{% endblock %}
+{% block title %}{{ item.name|title }}{% if show_category_breadcrumb %} - {{ category.name|title }}{% endif %} - Food Guide{% endblock %}
 {% block content %}
 <style>
   /* ── Hero ── */
@@ -93,10 +93,10 @@
 <!-- Hero -->
 <div class="gi-hero">
   <div class="gi-hero-inner">
-    {% if item.image %}<img class="gi-hero-img" src="{{ item.image.url }}" alt="{{ item.name }}">{% endif %}
+    {% if item.image %}<img class="gi-hero-img" src="{{ item.image.url }}" alt="{{ item.name|title }}">{% endif %}
     <div class="gi-hero-info">
-      <h1>{{ item.name }}</h1>
-      <p>{{ category.icon }} {{ category.name }}{% if item.description %} — {{ item.description|truncatechars:80 }}{% endif %}</p>
+      <h1>{{ item.name|title }}</h1>
+      <p>{{ category.icon }} {{ category.name|title }}{% if item.description %} — {{ item.description|truncatechars:80 }}{% endif %}</p>
     </div>
   </div>
 </div>
@@ -113,7 +113,12 @@
   </div>
 </div>
 
-<div class="gi-body">
+<nav class="gi-breadcrumb" aria-label="Breadcrumb">
+  <a href="/health/">Health</a> &rsaquo; <a href="/health/guide/">Food Guide</a> &rsaquo;
+  {% if show_category_breadcrumb %}<a href="/health/guide/{{ category.slug }}/">{{ category.name|title }}</a> &rsaquo;{% endif %}
+  <span aria-current="page">{{ item.name|title }}</span>
+</nav>
+<div class="gi-body gi-balanced{% if not item.nutrition and not item.benefits %} gi-single{% endif %}">
   <!-- ══ UNIFIED REEL FEED ══ -->
   <div class="reel-feed" id="reelFeed">
 
@@ -134,7 +139,7 @@
       </div>
       {% endif %}
       <div class="reel-info">
-        <div class="reel-title">🏥 Health Advice – {{ item.name }}</div>
+        <div class="reel-title">🏥 Health Advice – {{ item.name|title }}</div>
         {% if item.advice_youtube_channel %}<div class="reel-channel">{{ item.advice_youtube_channel }}</div>{% endif %}
       </div>
     </div>
@@ -142,7 +147,7 @@
     <!-- Advice condition table slide -->
     <div class="reel-slide text-slide" data-section="advice" style="background:#0a1628">
       <div class="text-slide-inner">
-        <h3 style="color:#4ade80">🩺 Condition-wise Advice – {{ item.name }}</h3>
+        <h3 style="color:#4ade80">🩺 Condition-wise Advice – {{ item.name|title }}</h3>
         {% if advice %}
           {% for c in conditions %}{% with ca=advice|get_item:c.slug %}{% if ca %}
           <div class="dark-ca-row">
@@ -157,7 +162,7 @@
 
     <div class="reel-slide text-slide" data-section="nutrition" style="background:#0a1628">
       <div class="text-slide-inner">
-        <h3>Nutrition - {{ item.name }}</h3>
+        <h3>Nutrition - {{ item.name|title }}</h3>
         <p>{{ item.nutrition|default:"Nutrition information has not been published for this item yet." }}</p>
         {% if item.benefits %}<h3>Benefits</h3><p>{{ item.benefits }}</p>{% endif %}
       </div>
@@ -245,7 +250,7 @@
       </div>
       {% endif %}
       <div class="reel-info">
-        <div class="reel-title">🌿 Natural Treatment – {{ item.name }}</div>
+        <div class="reel-title">🌿 Natural Treatment – {{ item.name|title }}</div>
         {% if item.natural_treatment_youtube_channel %}<div class="reel-channel">{{ item.natural_treatment_youtube_channel }}</div>{% endif %}
       </div>
     </div>
@@ -300,7 +305,7 @@
     {% if related %}
     <div class="reel-slide text-slide" data-section="related" style="background:#0f0f0f">
       <div class="text-slide-inner">
-        <h3 style="color:#4ade80">More in {{ category.name }}</h3>
+        <h3 style="color:#4ade80">More in {{ category.name|title }}</h3>
         <div style="display:flex;gap:.5rem;overflow-x:auto;scrollbar-width:none;padding-bottom:.5rem">
           {% for rel in related %}
           <a href="/health/guide/{{ category.slug }}/{{ rel.slug }}/" style="flex-shrink:0;width:90px;text-decoration:none;color:#fff">
@@ -318,9 +323,6 @@
   <!-- ══ RIGHT SIDEBAR ══ -->
   {% if item.nutrition or item.benefits %}
   <div class="gi-sidebar">
-    <div class="breadcrumb">
-      <a href="/health/">Health</a> › <a href="/health/guide/">Food Guide</a> › <a href="/health/guide/{{ category.slug }}/">{{ category.name }}</a> › {{ item.name }}
-    </div>
     {% if item.nutrition %}
     <div class="info-card">
       <h4>📊 Nutrition</h4>

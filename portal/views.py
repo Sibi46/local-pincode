@@ -9,6 +9,7 @@ from django.utils import timezone
 from django.core.mail import send_mail
 from django.conf import settings
 from django.db import transaction
+from django.views.decorators.cache import never_cache
 
 from .models import (
     Category, Community, CommunityLeader, CommunityMember,
@@ -80,6 +81,7 @@ def community_list(request):
     })
 
 
+@never_cache
 def community_page(request, page_id):
     community = get_object_or_404(Community, page_id=page_id, is_active=True)
     is_member  = _is_member(community, request.user)
@@ -563,13 +565,15 @@ def join_community(request, page_id):
                 'user': user,
             })
 
-    # Do the join
-    if community.join_mode == 'open':
-        CommunityMember.objects.create(community=community, user=request.user, status='approved', approved_at=timezone.now())
+    status = 'approved' if community.join_mode == 'open' else 'pending'
+    membership, created = CommunityMember.objects.get_or_create(
+        community=community, user=request.user,
+        defaults={'status': status, 'approved_at': timezone.now() if status == 'approved' else None},
+    )
+    if created and status == 'approved':
         _notify(request.user, 'join_approved', f'Welcome to {community.name}!', f'/portal/c/{page_id}/')
         messages.success(request, f'You joined {community.name}!')
-    else:
-        CommunityMember.objects.create(community=community, user=request.user, status='pending')
+    elif created:
         if community.created_by:
             _notify(community.created_by, 'join_request',
                     f'{request.user.get_full_name()} wants to join {community.name}.',
@@ -1466,6 +1470,20 @@ def create_post(request, page_id):
     if request.method == 'POST':
         from datetime import date as _date
         p = request.POST
+        content = p.get('content', '').strip().strip('\u200b\ufeff').strip()
+        imgs = request.FILES.getlist('image')
+        meaningful_text = content.replace('\u200b', '').replace('\ufeff', '').strip()
+        if not meaningful_text and not imgs:
+            messages.error(request, 'Write a message or attach a photo before publishing.')
+            return redirect('portal_community', page_id=page_id)
+        if imgs:
+            from django.forms import ImageField
+            from django.core.exceptions import ValidationError
+            try:
+                ImageField().clean(imgs[0])
+            except ValidationError:
+                messages.error(request, 'Please attach a valid photo.')
+                return redirect('portal_community', page_id=page_id)
         event_date = None
         raw_date = p.get('event_date', '').strip()
         if raw_date:
@@ -1476,10 +1494,9 @@ def create_post(request, page_id):
         post = Post(
             community=community, author=request.user,
             post_type=p.get('post_type', 'update'),
-            content=p.get('content', '').strip(),
+            content=content,
             event_date=event_date,
         )
-        imgs = request.FILES.getlist('image')
         if imgs:
             post.image = imgs[0]
         post.save()
@@ -2628,3 +2645,14 @@ def point_config_admin(request, slug):
         'configs': configs,
     }
     return render(request, 'portal/point_config_admin.html', ctx)
+
+
+@login_required
+@never_cache
+def membership_status(request, page_id):
+    community = get_object_or_404(Community, page_id=page_id, is_active=True)
+    membership = community.memberships.filter(user=request.user).first()
+    return JsonResponse({
+        'member_count': community.member_count(),
+        'status': membership.status if membership else None,
+    })

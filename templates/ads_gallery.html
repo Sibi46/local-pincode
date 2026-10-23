@@ -156,6 +156,7 @@
 {% if offer_categories %}
 <section class="offers-section" aria-labelledby="offers-heading">
   <div class="offers-heading"><h2 id="offers-heading">Offers Near You</h2><span>{{ flash_offers.count|add:normal_offers.count }} offers</span></div>
+  <p>Businesses appear here when they have an active offer. <a href="/businesses/">Browse all businesses</a></p>
   <nav class="offer-filters" aria-label="Offer categories">
     <a href="/advertise/" {% if not active_cat %}aria-current="page"{% endif %}>All</a>
     {% for val,label in offer_categories %}<a href="/advertise/?cat={{ val }}" {% if active_cat == val %}aria-current="page"{% endif %}>{{ label }}</a>{% endfor %}
@@ -178,10 +179,11 @@ var OFFERS_DATA = {
     discount: "{{ o.discount_text|escapejs }}",
     category: "{{ o.get_category_display|escapejs }}",
     description: "{{ o.description|escapejs }}",
-    phone: "{{ o.contact_phone|escapejs }}",
+    phone: "{{ o.whatsapp_phone|escapejs }}",
+    whatsapp: "{{ o.whatsapp_url|escapejs }}",
     valid_until: "{% if o.valid_until %}{{ o.valid_until|date:'d M Y' }}{% endif %}",
     valid_days: "{{ o.valid_days|escapejs }}",
-    store: "{% if o.owner.company.company_id %}{% url 'business_profile' o.owner.company.company_id %}{% elif o.link_url %}{{ o.link_url|escapejs }}{% endif %}",
+    store: "{{ o.store_url|escapejs }}",
     image: "{% if o.image %}{{ o.image.url|escapejs }}{% endif %}"
   },
   {% endfor %}
@@ -192,10 +194,11 @@ var OFFERS_DATA = {
     discount: "{{ o.discount_text|escapejs }}",
     category: "{{ o.get_category_display|escapejs }}",
     description: "{{ o.description|escapejs }}",
-    phone: "{{ o.contact_phone|escapejs }}",
+    phone: "{{ o.whatsapp_phone|escapejs }}",
+    whatsapp: "{{ o.whatsapp_url|escapejs }}",
     valid_until: "{% if o.valid_until %}{{ o.valid_until|date:'d M Y' }}{% endif %}",
     valid_days: "{{ o.valid_days|escapejs }}",
-    store: "{% if o.owner.company.company_id %}{% url 'business_profile' o.owner.company.company_id %}{% elif o.link_url %}{{ o.link_url|escapejs }}{% endif %}",
+    store: "{{ o.store_url|escapejs }}",
     image: "{% if o.image %}{{ o.image.url|escapejs }}{% endif %}"
   }{% if not forloop.last %},{% endif %}
   {% endfor %}
@@ -219,6 +222,7 @@ var OFFERS_DATA = {
     <div id="omPhone" style="font-size:13px;color:#0a66c2;font-weight:700;margin-bottom:4px;display:none"><i class="fas fa-phone-alt"></i> <span id="omPhoneVal"></span></div>
     <div id="omAddr" style="font-size:12px;color:#666;margin-bottom:6px;display:none"><i class="fas fa-map-marker-alt" style="color:#EF4444"></i> <span id="omAddrVal"></span></div>
     <a id="omStore" class="btn-visit" style="display:none;padding:12px;border-radius:10px;margin-bottom:12px;text-align:center">Visit Store</a>
+    <p id="omContactStatus" role="status" hidden>A verified WhatsApp contact is not available for this offer.</p>
     <div id="omValid" style="font-size:12px;color:#EF4444;font-weight:700;margin-bottom:16px"></div>
     <div style="display:flex;gap:10px">
       <button id="omWA" onclick="" style="flex:1;background:#25D366;color:#fff;border:none;border-radius:12px;padding:13px;font-size:14px;font-weight:800;cursor:pointer;display:none"><i class="fab fa-whatsapp"></i> WhatsApp</button>
@@ -249,7 +253,7 @@ function openOffer(pk) {
   var phoneEl = document.getElementById('omPhone');
   var addrEl = document.getElementById('omAddr');
   if (o.phone) {
-    document.getElementById('omPhoneVal').textContent = '+91 ' + o.phone;
+    document.getElementById('omPhoneVal').textContent = '+' + o.phone;
     phoneEl.style.display = 'block';
   } else { phoneEl.style.display = 'none'; }
   if (o.address) {
@@ -257,9 +261,10 @@ function openOffer(pk) {
     addrEl.style.display = 'block';
   } else { addrEl.style.display = 'none'; }
   var waBtn = document.getElementById('omWA');
-  if (o.phone) {
+  document.getElementById('omContactStatus').hidden = !!o.whatsapp;
+  if (o.whatsapp) {
     waBtn.style.display = 'block';
-    waBtn.onclick = function(){ window.open('https://wa.me/91'+o.phone+'?text='+encodeURIComponent('Hi, I saw your offer: '+o.title+' – '+o.discount),'_blank'); };
+    waBtn.onclick = function(){ window.open(o.whatsapp+'?text='+encodeURIComponent('Hi, I saw your offer: '+o.title+' – '+o.discount),'_blank'); };
   } else { waBtn.style.display = 'none'; }
   document.getElementById('omShare').onclick = function(){ shareOffer(o.name, o.title, o.discount, o.phone, pk); };
   var m = document.getElementById('offerModal');

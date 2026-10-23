@@ -1123,6 +1123,7 @@ def guide_item(request, cat_slug, item_slug):
     related        = FoodItem.objects.filter(category=category).exclude(pk=item.pk)[:4]
     return render(request, 'health/guide_item.html', {
         'category': category, 'item': item,
+        'show_category_breadcrumb': category.name.strip().casefold() != item.name.strip().casefold(),
         'conditions': conditions, 'advice': advice,
         'growing_images': growing_images, 'related': related,
         'recipe_videos': recipe_videos, 'growing_videos': growing_videos,
