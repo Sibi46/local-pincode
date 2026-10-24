@@ -903,165 +903,12 @@ var olxAdCur = 0;
         <a href="/vouchers/marketplace/" class="admin-footer-btn" title="Vouchers"><i class="fas fa-gift"></i></a>
         {% if request.user.is_authenticated %}{% endif %}
         <a href="/coupons/salesman/login/" class="admin-footer-btn" title="Salesman Login"><i class="fas fa-user-tie"></i></a>
-        <button class="admin-footer-btn" onclick="openAdminPanel()" title="Admin"><i class="fas fa-shield-alt"></i></button>
+        {% if request.user.is_authenticated and request.user.admin_role %}<a class="admin-footer-btn" href="{% url 'dashboard' %}" aria-label="Admin workspace"><i class="fas fa-shield-alt"></i></a>{% endif %}
       </div>
     </div>
   </div>
 </footer>
 
-<!-- ADMIN MODAL -->
-<div class="admin-modal-overlay" id="adminModal" onclick="if(event.target===this)closeAdminPanel()">
-  <div class="admin-modal-box">
-    <div class="admin-modal-header">
-      <div><h2><i class="fas fa-shield-alt"></i> Admin Control Panel</h2><p>OUR PINCODE — Platform Management</p></div>
-      <button class="admin-modal-close" onclick="closeAdminPanel()"><i class="fas fa-times"></i></button>
-    </div>
-
-    {% if request.user.is_authenticated and request.user.admin_role %}
-      <div class="admin-role-info">
-        {% if request.user.admin_role == 'super_admin' %}
-          <span class="admin-role-badge super"><i class="fas fa-crown"></i> Super Admin</span><span>National Level</span>
-        {% elif request.user.admin_role == 'state_admin' %}
-          <span class="admin-role-badge state"><i class="fas fa-map"></i> State Admin</span>
-        {% else %}
-          <span class="admin-role-badge district"><i class="fas fa-map-marker-alt"></i> District Admin</span>
-        {% endif %}
-        <a href="/logout/" class="admin-logout-link"><i class="fas fa-sign-out-alt"></i> Logout</a>
-      </div>
-
-      {% if request.user.admin_role == 'super_admin' %}
-      <div class="admin-features-grid">
-        <div class="admin-feature-group">
-          <div class="afg-title"><i class="fas fa-tachometer-alt"></i> Overview</div>
-          <a href="/super-admin/" class="afc"><i class="fas fa-home"></i><span>Dashboard</span></a>
-          <a href="/super-admin/analytics/" class="afc"><i class="fas fa-chart-line"></i><span>Analytics</span></a>
-        </div>
-        <div class="admin-feature-group">
-          <div class="afg-title"><i class="fas fa-users"></i> Users</div>
-          <a href="/super-admin/state-admins/" class="afc"><i class="fas fa-user-shield"></i><span>State Admins</span></a>
-          <a href="/super-admin/state-admins/create/" class="afc"><i class="fas fa-user-plus"></i><span>Create Admin</span></a>
-          <a href="/admin/" class="afc"><i class="fas fa-cog"></i><span>Django Admin</span></a>
-        </div>
-        <div class="admin-feature-group">
-          <div class="afg-title"><i class="fas fa-map"></i> Geography</div>
-          <a href="/super-admin/states/" class="afc"><i class="fas fa-flag"></i><span>States</span></a>
-          <a href="/super-admin/pincodes/" class="afc"><i class="fas fa-map-pin"></i><span>PIN Codes</span></a>
-        </div>
-        <div class="admin-feature-group">
-          <div class="afg-title"><i class="fas fa-briefcase"></i> Jobs</div>
-          <a href="/super-admin/industries/" class="afc"><i class="fas fa-industry"></i><span>Industries</span></a>
-          <a href="/super-admin/job-roles/" class="afc"><i class="fas fa-briefcase"></i><span>Job Roles</span></a>
-        </div>
-        <div class="admin-feature-group">
-          <div class="afg-title"><i class="fas fa-credit-card"></i> Payments</div>
-          <a href="/super-admin/payment-plans/" class="afc"><i class="fas fa-file-invoice-dollar"></i><span>Plans</span></a>
-          <a href="/super-admin/discounts/" class="afc"><i class="fas fa-tag"></i><span>Discounts</span></a>
-        </div>
-        <div class="admin-feature-group">
-          <div class="afg-title"><i class="fas fa-gift"></i> Gift Vouchers</div>
-          <a href="/vouchers/admin-panel/" class="afc"><i class="fas fa-tachometer-alt"></i><span>Voucher Dashboard</span></a>
-          <a href="/vouchers/marketplace/" class="afc"><i class="fas fa-store"></i><span>Marketplace</span></a>
-        </div>
-        <div class="admin-feature-group">
-          <div class="afg-title"><i class="fas fa-bullhorn"></i> Ads</div>
-          <a href="/admin-panel/advertisers/" class="afc"><i class="fas fa-user-tie"></i><span>Advertisers</span></a>
-          <a href="/admin-panel/ads/" class="afc"><i class="fas fa-ad"></i><span>Ads</span></a>
-        </div>
-        <div class="admin-feature-group">
-          <div class="afg-title"><i class="fas fa-tools"></i> Support</div>
-          <a href="/district-admin/complaints/" class="afc"><i class="fas fa-exclamation-triangle"></i><span>Complaints</span></a>
-          <a href="/super-admin/notifications/" class="afc"><i class="fas fa-bell"></i><span>Notifications</span></a>
-        </div>
-        <div class="admin-feature-group">
-          <div class="afg-title"><i class="fas fa-building"></i> Employers</div>
-          <a href="/state-admin/employers/" class="afc"><i class="fas fa-check-circle"></i><span>Verify</span></a>
-          <a href="/district-admin/employers/" class="afc"><i class="fas fa-clipboard-check"></i><span>Approve</span></a>
-        </div>
-        <div class="admin-feature-group">
-          <div class="afg-title"><i class="fas fa-graduation-cap"></i> Campus</div>
-          <a href="/campus/admin/dashboard/" class="afc"><i class="fas fa-graduation-cap"></i><span>Campus Admin</span></a>
-          <a href="/campus/admin/companies/" class="afc"><i class="fas fa-building"></i><span>Companies</span></a>
-        </div>
-      </div>
-      {% elif request.user.admin_role == 'state_admin' %}
-      <div class="admin-features-grid">
-        <div class="admin-feature-group">
-          <div class="afg-title"><i class="fas fa-tachometer-alt"></i> Overview</div>
-          <a href="/state-admin/" class="afc"><i class="fas fa-home"></i><span>Dashboard</span></a>
-          <a href="/state-admin/reports/" class="afc"><i class="fas fa-chart-bar"></i><span>Reports</span></a>
-        </div>
-        <div class="admin-feature-group">
-          <div class="afg-title"><i class="fas fa-users"></i> Management</div>
-          <a href="/state-admin/district-admins/create/" class="afc"><i class="fas fa-user-plus"></i><span>Create District Admin</span></a>
-          <a href="/state-admin/employers/" class="afc"><i class="fas fa-building"></i><span>Verify Employers</span></a>
-        </div>
-        <div class="admin-feature-group">
-          <div class="afg-title"><i class="fas fa-tools"></i> Support</div>
-          <a href="/district-admin/complaints/" class="afc"><i class="fas fa-exclamation-triangle"></i><span>Complaints</span></a>
-        </div>
-      </div>
-      {% else %}
-      <div class="admin-features-grid">
-        <div class="admin-feature-group">
-          <div class="afg-title"><i class="fas fa-tachometer-alt"></i> Overview</div>
-          <a href="/district-admin/" class="afc"><i class="fas fa-home"></i><span>Dashboard</span></a>
-        </div>
-        <div class="admin-feature-group">
-          <div class="afg-title"><i class="fas fa-tasks"></i> Actions</div>
-          <a href="/district-admin/employers/" class="afc"><i class="fas fa-building"></i><span>Approve Employers</span></a>
-          <a href="/district-admin/jobs/" class="afc"><i class="fas fa-briefcase"></i><span>Moderate Jobs</span></a>
-          <a href="/district-admin/complaints/" class="afc"><i class="fas fa-exclamation-circle"></i><span>Complaints</span></a>
-        </div>
-      </div>
-      {% endif %}
-
-    {% elif request.user.is_authenticated %}
-      <div class="admin-login-prompt">
-        <i class="fas fa-shield-alt" style="font-size:44px;color:#1d4ed8;margin-bottom:12px;display:block"></i>
-        <h3>Admin Login</h3>
-        <p style="margin-bottom:20px">Enter your admin phone number and password</p>
-        <form method="POST" action="/admin-panel/login/" style="text-align:left">
-          {% csrf_token %}
-          <div style="margin-bottom:12px">
-            <label style="font-size:13px;font-weight:700;color:#444;display:block;margin-bottom:5px"><i class="fas fa-phone"></i> Phone Number</label>
-            <input type="tel" name="phone" placeholder="Admin 10-digit mobile number" maxlength="10" style="width:100%;padding:11px 14px;border:1.5px solid #ddd;border-radius:8px;font-size:14px;outline:none" required>
-          </div>
-          <div style="margin-bottom:16px">
-            <label style="font-size:13px;font-weight:700;color:#444;display:block;margin-bottom:5px"><i class="fas fa-lock"></i> Password</label>
-            <input type="password" name="password" placeholder="Enter admin password" style="width:100%;padding:11px 14px;border:1.5px solid #ddd;border-radius:8px;font-size:14px;outline:none" required>
-          </div>
-          <button type="submit" style="width:100%;padding:12px;background:#1d4ed8;color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer">
-            <i class="fas fa-sign-in-alt"></i> Login to Admin Panel
-          </button>
-        </form>
-        <p style="margin-top:14px;font-size:12px;color:#aaa;text-align:center">Admin accounts are created by the Super Admin only.</p>
-      </div>
-    {% else %}
-      <div class="admin-login-prompt">
-        <i class="fas fa-shield-alt" style="font-size:44px;color:#1d4ed8;margin-bottom:12px;display:block"></i>
-        <h3>Admin Login</h3>
-        <p style="margin-bottom:20px">Enter your phone number and password</p>
-        <form method="POST" action="/admin-panel/login/" style="text-align:left">
-          {% csrf_token %}
-          <div style="margin-bottom:12px">
-            <label style="font-size:13px;font-weight:700;color:#444;display:block;margin-bottom:5px"><i class="fas fa-phone"></i> Phone Number</label>
-            <input type="tel" name="phone" placeholder="10-digit mobile number" maxlength="10" style="width:100%;padding:11px 14px;border:1.5px solid #ddd;border-radius:8px;font-size:14px;outline:none" required>
-          </div>
-          <div style="margin-bottom:16px">
-            <label style="font-size:13px;font-weight:700;color:#444;display:block;margin-bottom:5px"><i class="fas fa-lock"></i> Password</label>
-            <input type="password" name="password" placeholder="Enter your password" style="width:100%;padding:11px 14px;border:1.5px solid #ddd;border-radius:8px;font-size:14px;outline:none" required>
-          </div>
-          <button type="submit" style="width:100%;padding:12px;background:#1d4ed8;color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer">
-            <i class="fas fa-sign-in-alt"></i> Login to Admin Panel
-          </button>
-        </form>
-        <p style="margin-top:14px;font-size:12px;color:#aaa;text-align:center">Admin accounts are created by the Super Admin only.</p>
-      </div>
-    {% endif %}
-  </div>
-</div>
-
-<!-- SPIN JS -->
 <script>
 (function(){
   var boxes = document.querySelectorAll('.spin-box');
@@ -1103,9 +950,6 @@ var olxAdCur = 0;
 
 <script src="{% static 'js/main.js' %}?v=2"></script>
 <script>
-function openAdminPanel(){document.getElementById('adminModal').classList.add('open')}
-function closeAdminPanel(){document.getElementById('adminModal').classList.remove('open')}
-document.addEventListener('keydown',function(e){if(e.key==='Escape')closeAdminPanel()});
 
 var olxAdCur = window.olxAdCur || 0;
 window.addEventListener('pageshow', function(e){
@@ -1412,46 +1256,12 @@ function doLogin(){
 
 <!-- ── PAGE LOADING INDICATOR ── -->
 <div id="opc-bar" style="position:fixed;top:0;left:0;width:0%;height:3px;background:linear-gradient(90deg,#1d4ed8,#f97316,#059669);z-index:99999;transition:width .25s ease,opacity .3s ease;opacity:0;pointer-events:none"></div>
-<div id="opc-loader" style="display:none;position:fixed;inset:0;background:rgba(255,255,255,.82);backdrop-filter:blur(3px);z-index:99998;align-items:center;justify-content:center;flex-direction:column;gap:14px">
+<div id="opc-loader" role="status" aria-live="polite" aria-hidden="true" style="display:none;position:fixed;inset:0;background:rgba(255,255,255,.82);backdrop-filter:blur(3px);z-index:99998;align-items:center;justify-content:center;flex-direction:column;gap:14px">
   <div style="width:44px;height:44px;border-radius:50%;border:4px solid #e5e7eb;border-top-color:#1d4ed8;animation:opc-spin .7s linear infinite"></div>
   <div style="font-size:13px;font-weight:700;color:#374151;font-family:'Poppins','Segoe UI',sans-serif">Loading…</div>
 </div>
 <style>@keyframes opc-spin{to{transform:rotate(360deg)}}</style>
-<script>
-(function(){
-  var bar=document.getElementById('opc-bar');
-  var loader=document.getElementById('opc-loader');
-  var overlayTimer=null,started=false;
-  function start(){
-    if(started)return; started=true;
-    bar.style.opacity='1'; bar.style.width='30%';
-    bar.style.transition='width 8s cubic-bezier(.1,.6,.3,1),opacity .3s ease';
-    clearTimeout(overlayTimer);
-    overlayTimer=setTimeout(function(){ loader.style.display='flex'; },400);
-  }
-  function finish(){
-    clearTimeout(overlayTimer);
-    bar.style.transition='width .2s ease,opacity .4s ease .2s';
-    bar.style.width='100%';
-    loader.style.display='none';
-    setTimeout(function(){bar.style.opacity='0';setTimeout(function(){bar.style.width='0%';started=false;},400);},200);
-  }
-  window.addEventListener('beforeunload',start);
-  document.addEventListener('click',function(e){
-    var a=e.target.closest('a');
-    if(!a)return;
-    var href=a.getAttribute('href');
-    if(!href||href.startsWith('#')||href.startsWith('javascript')||a.target==='_blank'||e.ctrlKey||e.metaKey||e.shiftKey)return;
-    if(href.startsWith('http')&&!href.includes(window.location.hostname))return;
-    start();
-  });
-  document.addEventListener('submit',function(e){
-    if(e.target&&e.target.tagName==='FORM'&&e.target.method!=='dialog')start();
-  });
-  window.addEventListener('pageshow',finish);
-  document.addEventListener('DOMContentLoaded',finish);
-})();
-</script>
+<script src="{% static 'js/page-loading.js' %}?v=1" defer></script>
 {% include "includes/quiz_popup.html" %}
 </body>
 </html>

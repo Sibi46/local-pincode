@@ -10,6 +10,8 @@ from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 
+from .public_jobs import public_jobs
+
 from .models import (Job, JobApplication, CompanyProfile, ShopProfile,
                      JobSeekerProfile, SeekerCertificate, SavedJob, Interview,
                      Conversation, Message, OfferLetter,
@@ -114,19 +116,19 @@ def home(request):
 
 
     # ── Jobs & employers ────────────────────────────────
-    featured_jobs = Job.objects.filter(status='active').select_related('posted_by').order_by('-created_at')[:8]
+    featured_jobs = public_jobs().select_related('posted_by').order_by('-created_at')[:8]
 
     # ── Stats — cached 5 min to avoid COUNT on every request ─────────────────
     from django.core.cache import cache
-    stats = cache.get('homepage_stats')
+    stats = cache.get('homepage_stats_public_v2')
     if not stats:
         stats = {
-            'total_jobs':      Job.objects.filter(status='active').count(),
+            'total_jobs':      public_jobs().count(),
             'total_employers': User.objects.filter(user_type__in=User.EMPLOYER_TYPES).count(),
             'total_seekers':   User.objects.filter(user_type__in=['employee', 'individual', 'freelancer']).count(),
             'total_districts': District.objects.filter(is_active=True).count(),
         }
-        cache.set('homepage_stats', stats, 300)
+        cache.set('homepage_stats_public_v2', stats, 300)
     total_jobs      = stats['total_jobs']
     total_employers = stats['total_employers']
     total_seekers   = stats['total_seekers']
@@ -144,7 +146,7 @@ def home(request):
 
     # ── Jobs by District — single aggregated query instead of N+1 ───────────
     active_pin_job_counts = dict(
-        Job.objects.filter(status='active')
+        public_jobs()
         .values('pincode')
         .annotate(cnt=Count('id'))
         .values_list('pincode', 'cnt')
@@ -473,7 +475,7 @@ def dashboard(request):
 
 # ── JOBS ──────────────────────────────────────────────────────────────────────
 def job_list(request):
-    jobs = Job.objects.filter(status='active', is_approved=True, job_plan__in=['free', 'paid'], posted_by__user_type__in=User.EMPLOYER_TYPES)
+    jobs = public_jobs()
 
     collar    = request.GET.get('collar', '')
     category  = request.GET.get('category', '')
@@ -495,14 +497,17 @@ def job_list(request):
         # Nearby radius search
         try:
             from .utils import geocode_pincode, jobs_within_radius
+            import math
             radius_km = float(radius_km)
+            if not math.isfinite(radius_km) or not 0 < radius_km <= 500:
+                raise ValueError
             lat, lng = geocode_pincode(pincode)
             if lat:
                 nearby_pairs = jobs_within_radius(lat, lng, radius_km, queryset=jobs)
                 # nearby_pairs is [(job, dist_km), ...]
                 jobs = [pair[0] for pair in nearby_pairs]
             else:
-                radius_error = f"Could not locate pincode {pincode}. Showing all results."
+                radius_error = f"Could not locate pincode {pincode}. Showing exact PIN code matches."
                 jobs = jobs.filter(pincode=pincode) if pincode else jobs
         except (ValueError, TypeError):
             radius_error = "Invalid radius value."
@@ -525,13 +530,13 @@ def job_list(request):
 
 
 def job_detail(request, pk):
-    job = get_object_or_404(Job, pk=pk, status='active', is_approved=True, job_plan__in=['free', 'paid'])
+    job = get_object_or_404(public_jobs(), pk=pk)
     already_applied = False
     is_saved = False
     if request.user.is_authenticated:
         already_applied = JobApplication.objects.filter(job=job, applicant=request.user).exists()
         is_saved = SavedJob.objects.filter(user=request.user, job=job).exists()
-    related = Job.objects.filter(collar_type=job.collar_type, status='active', is_approved=True, job_plan__in=['free', 'paid']).exclude(pk=pk)[:3]
+    related = public_jobs().filter(collar_type=job.collar_type).exclude(pk=pk)[:3]
     return render(request, 'job_detail.html', {
         'job': job,
         'already_applied': already_applied,
@@ -562,7 +567,7 @@ def _application_missing_fields(seeker):
 
 @login_required
 def apply_job(request, pk):
-    job = get_object_or_404(Job, pk=pk, status='active', is_approved=True, job_plan__in=['free', 'paid'])
+    job = get_object_or_404(public_jobs(), pk=pk)
 
     # Already applied — redirect back
     existing = JobApplication.objects.filter(job=job, applicant=request.user).first()
@@ -1199,13 +1204,13 @@ def jobseeker_dashboard(request):
     applications = JobApplication.objects.filter(applicant=request.user).select_related('job')
     try:
         profile = request.user.seeker
-        qs = Job.objects.filter(status='active', is_approved=True, job_plan__in=['free', 'paid'])
+        qs = public_jobs()
         if profile.job_category and profile.job_category != 'any':
             qs = qs.filter(collar_type=profile.job_category)
         recommended = qs.order_by('-created_at')[:4]
     except Exception:
         profile = None
-        recommended = Job.objects.filter(status='active', is_approved=True, job_plan__in=['free', 'paid']).order_by('-created_at')[:4]
+        recommended = public_jobs().order_by('-created_at')[:4]
     notifs = UserNotification.objects.filter(user=request.user).order_by('-created_at')[:12]
     unread_notif_count = UserNotification.objects.filter(user=request.user, is_read=False).count()
     show_referral_popup = request.session.pop('show_referral_popup', False)
@@ -1397,6 +1402,7 @@ def send_otp(request):
         return JsonResponse({'success': False})
 
     import json, random, requests as _req
+    data = {}
     try:
         data = json.loads(request.body)
         phone = data.get('phone', '').strip()
@@ -1457,8 +1463,11 @@ def verify_otp(request):
         return JsonResponse({'success': False})
 
     import json
-    data    = json.loads(request.body)
-    entered = data.get('otp', '').strip()
+    try:
+        data = json.loads(request.body)
+        entered = str(data.get('otp', '')).strip()
+    except (ValueError, AttributeError, TypeError):
+        return JsonResponse({'success': False, 'error': 'Enter a valid 6-digit OTP.'}, status=400)
     stored  = request.session.get('otp', '')
     phone   = request.session.get('otp_phone', '')
 
@@ -1487,8 +1496,13 @@ def check_phone(request):
     if request.method != 'POST':
         return JsonResponse({'exists': False})
     import json
-    data  = json.loads(request.body)
-    phone = data.get('phone', '').strip()
+    try:
+        data = json.loads(request.body)
+        phone = str(data.get('phone', '')).strip()
+    except (ValueError, AttributeError, TypeError):
+        return JsonResponse({'exists': False, 'error': 'Enter a valid 10-digit mobile number.'}, status=400)
+    if len(phone) != 10 or not phone.isascii() or not phone.isdigit():
+        return JsonResponse({'exists': False, 'error': 'Enter a valid 10-digit mobile number.'}, status=400)
     User  = get_user_model()
     user  = User.objects.filter(phone=phone).first()
     if user:
@@ -2528,12 +2542,18 @@ def nearby_jobs_api(request):
     Returns JSON list of jobs within radius_km, sorted by distance.
     """
     pincode   = request.GET.get('pincode', '').strip()
-    radius_km = float(request.GET.get('radius', 5))
+    import math
+    try:
+        radius_km = float(request.GET.get('radius', 5))
+        if not math.isfinite(radius_km) or not 0 < radius_km <= 500:
+            raise ValueError
+    except (ValueError, TypeError):
+        return JsonResponse({'error': 'Enter a radius between 0 and 500 km.'}, status=400)
     collar    = request.GET.get('collar', '')
     q         = request.GET.get('q', '')
 
-    if not pincode:
-        return JsonResponse({'error': 'pincode is required'}, status=400)
+    if len(pincode) != 6 or not pincode.isascii() or not pincode.isdigit():
+        return JsonResponse({'error': 'Enter a valid 6-digit PIN code.'}, status=400)
 
     from .utils import geocode_pincode, jobs_within_radius
 
@@ -2542,7 +2562,7 @@ def nearby_jobs_api(request):
         logger.warning('nearby_jobs_api: geocode failed for pincode=%s', pincode)
         return JsonResponse({'error': 'Location not found for the given pincode.'}, status=404)
 
-    base_qs = Job.objects.filter(status='active')
+    base_qs = public_jobs()
     if collar:
         base_qs = base_qs.filter(collar_type=collar)
     if q:
