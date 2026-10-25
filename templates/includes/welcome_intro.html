@@ -1,0 +1,39 @@
+{% load static %}
+{% if not request.user.is_authenticated %}
+<link rel="stylesheet" href="{% static 'css/welcome-intro.css' %}?v=1">
+<dialog id="welcomeIntro" class="welcome-intro" aria-labelledby="welcomeTitle" aria-describedby="welcomeDescription">
+  <div class="welcome-shell">
+    <header class="welcome-header">
+      <span class="welcome-brand">OUR<span>PINCODE</span><small>YOUR AREA. YOUR PEOPLE.</small></span>
+      <button type="button" class="welcome-skip" data-welcome-skip>Skip intro <i class="fas fa-arrow-right" aria-hidden="true"></i></button>
+    </header>
+    <div class="welcome-content">
+      <div class="welcome-art" aria-hidden="true">
+        <span class="welcome-orbit welcome-orbit-one"></span><span class="welcome-orbit welcome-orbit-two"></span>
+        <span class="welcome-spark welcome-spark-one"><i class="fas fa-map-marker-alt"></i></span>
+        <span class="welcome-main-icon"><i id="welcomeIcon" class="fas fa-store"></i></span>
+        <span class="welcome-spark welcome-spark-two"><i class="fas fa-heart"></i></span>
+        <span id="welcomeBadge" class="welcome-badge">GROW LOCAL</span>
+      </div>
+      <div class="welcome-copy">
+        <p id="welcomeEyebrow" class="welcome-eyebrow">01 / YOUR BUSINESS</p>
+        <h1 id="welcomeTitle">Register your business.<br>Reach more customers.</h1>
+        <p id="welcomeDescription">Bring your shop or service closer to the people around you. Create a business profile, share what you offer, and help local customers discover you.</p>
+        <a id="welcomeAction" class="welcome-action" href="/register/?type=company">Register your business <i class="fas fa-arrow-up-right-from-square" aria-hidden="true"></i></a>
+      </div>
+    </div>
+    <footer class="welcome-footer">
+      <div class="welcome-progress" role="group" aria-label="Introduction slides">
+        <button type="button" data-welcome-slide="0" aria-label="Slide 1: Business" aria-current="step"></button>
+        <button type="button" data-welcome-slide="1" aria-label="Slide 2: Community"></button>
+        <button type="button" data-welcome-slide="2" aria-label="Slide 3: News"></button>
+        <button type="button" data-welcome-slide="3" aria-label="Slide 4: Offers"></button>
+        <button type="button" data-welcome-slide="4" aria-label="Slide 5: Welcome"></button>
+      </div>
+      <p id="welcomeCount" class="welcome-count" aria-live="polite" aria-atomic="true">1 of 5</p>
+      <div class="welcome-controls"><button type="button" id="welcomeBack" class="welcome-back" disabled>Back</button><button type="button" id="welcomeNext" class="welcome-next">Next <i class="fas fa-arrow-right" aria-hidden="true"></i></button></div>
+    </footer>
+  </div>
+</dialog>
+<script src="{% static 'js/welcome-intro.js' %}?v=1" defer></script>
+{% endif %}
