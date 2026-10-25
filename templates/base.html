@@ -20,6 +20,7 @@
     <div class="nav-container">
         <a href="/" class="nav-logo"><img src="/static/images/ourpincod.jpeg" alt="OUR PINCODE" style="height:40px;width:auto;max-width:140px;object-fit:contain;display:block;"></a>
         <div class="nav-links">
+            <a href="/" class="nav-home"><i class="fas fa-home" aria-hidden="true"></i> Home</a>
             <a href="{% url 'newsdesk:feed' %}"><i class="fas fa-newspaper"></i> News Desk</a>
             <a href="{% url 'network_feed' %}"><i class="fas fa-user-friends"></i> My Ask</a>
             {% if '/vouchers' in request.path %}
@@ -46,17 +47,19 @@
 
                 {% with adv=request.user.advertiser %}
                 {% if adv and adv.status == 'approved' %}
-                    <a href="/advertise/dashboard/" style="color:#f3a000"><i class="fas fa-bullhorn"></i> My Ads</a>
+                    <a href="/advertiser/dashboard/" style="color:#f3a000"><i class="fas fa-bullhorn"></i> My Ads</a>
                 {% endif %}
                 {% endwith %}
 
                 <!-- Profile dropdown -->
                 <div class="nav-avatar-wrap">
-                    <button class="nav-avatar-btn" onclick="toggleProfileMenu(event)" aria-label="Profile menu">
+                    <button type="button" class="nav-avatar-btn" onclick="toggleProfileMenu(event)" aria-label="Profile menu" aria-expanded="false" aria-controls="profileDrop">
                         {% with s=request.user.seeker %}{% if profile_photo_url %}<img src="{{ profile_photo_url }}" alt="Profile photo" data-profile-avatar style="width:28px;height:28px;border-radius:50%;object-fit:cover;flex-shrink:0">{% else %}<i class="fas fa-user-circle"></i>{% endif %}{% endwith %}
                         <i class="fas fa-chevron-down nav-chevron"></i>
                     </button>
                     <div class="nav-profile-drop" id="profileDrop">
+                        <a href="/" data-profile-home><i class="fas fa-home" aria-hidden="true"></i> Home</a>
+                        <a href="/profile/"><i class="fas fa-user-circle" aria-hidden="true"></i> My Account</a>
                         <a href="/vouchers/my-vouchers/" style="color:#7c3aed"><i class="fas fa-ticket-alt"></i> My Vouchers</a>
                         <a href="/messages/"><i class="fas fa-comment-dots"></i> Messages</a>
                         {% if request.user.admin_role %}
@@ -90,9 +93,9 @@
                 {% with adv=request.user.advertiser %}
                 {% if adv and adv.status == 'approved' %}
                     {% if adv.ads.exists %}
-                        <a href="/advertise/dashboard/" style="color:#f3a000"><i class="fas fa-bullhorn"></i> My Ads</a>
+                        <a href="/advertiser/dashboard/" style="color:#f3a000"><i class="fas fa-bullhorn"></i> My Ads</a>
                     {% else %}
-                        <a href="/advertise/ads/create/" style="color:#f3a000"><i class="fas fa-plus"></i> Create Your First Ad</a>
+                        <a href="/ads/post/" style="color:#f3a000"><i class="fas fa-plus"></i> Create Your First Ad</a>
                     {% endif %}
                 {% endif %}
                 {% endwith %}
@@ -118,7 +121,7 @@
 
                 {% with adv=request.user.advertiser %}
                 {% if adv and adv.status == 'approved' %}
-                    <a href="/advertise/dashboard/" style="color:#f3a000"><i class="fas fa-bullhorn"></i> My Ads</a>
+                    <a href="/advertiser/dashboard/" style="color:#f3a000"><i class="fas fa-bullhorn"></i> My Ads</a>
                 {% endif %}
                 {% endwith %}
                 {% endif %}
@@ -156,11 +159,13 @@
 
                 <!-- Profile dropdown -->
                 <div class="nav-avatar-wrap">
-                    <button class="nav-avatar-btn" onclick="toggleProfileMenu(event)" aria-label="Profile menu">
+                    <button type="button" class="nav-avatar-btn" onclick="toggleProfileMenu(event)" aria-label="Profile menu" aria-expanded="false" aria-controls="profileDrop">
                         {% with s=request.user.seeker %}{% if profile_photo_url %}<img src="{{ profile_photo_url }}" alt="Profile photo" data-profile-avatar style="width:28px;height:28px;border-radius:50%;object-fit:cover;flex-shrink:0">{% else %}<i class="fas fa-user-circle"></i>{% endif %}{% endwith %}
                         <i class="fas fa-chevron-down nav-chevron"></i>
                     </button>
                     <div class="nav-profile-drop" id="profileDrop">
+                        <a href="/" data-profile-home><i class="fas fa-home" aria-hidden="true"></i> Home</a>
+                        <a href="/profile/"><i class="fas fa-user-circle" aria-hidden="true"></i> My Account</a>
                         <a href="/messages/"><i class="fas fa-comment-dots"></i> Messages</a>
                         <a href="/vouchers/my-vouchers/" style="color:#7c3aed"><i class="fas fa-ticket-alt"></i> My Vouchers</a>
                         {% if request.user.admin_role %}
@@ -179,9 +184,11 @@
             {% endif %}
             {% endif %}
         </div>
-        <div class="hamburger" onclick="toggleMenu()"><i class="fas fa-bars"></i></div>
+        <button type="button" class="hamburger" onclick="toggleMenu()" aria-label="Open navigation" aria-controls="mobileMenu" aria-expanded="false"><i class="fas fa-bars" aria-hidden="true"></i></button>
     </div>
     <div class="mobile-menu" id="mobileMenu">
+        <a href="/" data-mobile-home><i class="fas fa-home" aria-hidden="true"></i> Home</a>
+        {% if request.user.is_authenticated %}<a href="/profile/" data-mobile-profile><i class="fas fa-user-circle" aria-hidden="true"></i> My Account</a>{% endif %}
         <a href="{% url 'newsdesk:feed' %}"><i class="fas fa-newspaper"></i> News Desk</a>
         <a href="{% url 'network_feed' %}"><i class="fas fa-user-friends"></i> My Ask</a>
         {% if '/advertise' in request.path %}
@@ -195,9 +202,9 @@
             {% with adv=request.user.advertiser %}
             {% if adv and adv.status == 'approved' %}
                 {% if adv.ads.exists %}
-                    <a href="/advertise/dashboard/" style="color:#f3a000"><i class="fas fa-bullhorn"></i> My Ads</a>
+                    <a href="/advertiser/dashboard/" style="color:#f3a000"><i class="fas fa-bullhorn"></i> My Ads</a>
                 {% else %}
-                    <a href="/advertise/ads/create/" style="color:#f3a000"><i class="fas fa-plus"></i> Create Your First Ad</a>
+                    <a href="/ads/post/" style="color:#f3a000"><i class="fas fa-plus"></i> Create Your First Ad</a>
                 {% endif %}
             {% endif %}
             {% endwith %}
@@ -237,7 +244,7 @@
             {% endif %}
             {% with adv=request.user.advertiser %}
             {% if adv and adv.status == 'approved' %}
-                <a href="/advertise/dashboard/">My Ads</a>
+                <a href="/advertiser/dashboard/">My Ads</a>
             {% endif %}
             {% endwith %}
             <a href="/messages/">Messages</a>
@@ -771,21 +778,29 @@ body{padding-bottom:100px}.bottom-nav{padding-bottom:calc(4px + env(safe-area-in
 .nav-profile-drop a i{width:14px;text-align:center;flex-shrink:0}
 .npd-divider{height:1px;background:#f0f0f0;margin:4px 0}
 </style>
-<script src="{% static 'js/main.js' %}?v=2"></script>
+<script src="{% static 'js/main.js' %}?v=3"></script>
 <script>
+function closeProfileMenu(restoreFocus){
+  var drop=document.getElementById('profileDrop'),btn=document.querySelector('.nav-avatar-btn');
+  if(drop)drop.classList.remove('open');
+  if(btn){btn.classList.remove('open');btn.setAttribute('aria-expanded','false');if(restoreFocus)btn.focus();}
+}
 function toggleProfileMenu(e){
   e.stopPropagation();
-  var btn=e.currentTarget, drop=document.getElementById('profileDrop');
-  var isOpen=drop.classList.contains('open');
-  drop.classList.toggle('open',!isOpen);
-  btn.classList.toggle('open',!isOpen);
+  var btn=e.currentTarget,drop=document.getElementById('profileDrop');
+  if(!drop)return;
+  var open=!drop.classList.contains('open');
+  drop.classList.toggle('open',open);btn.classList.toggle('open',open);btn.setAttribute('aria-expanded',String(open));
 }
 document.addEventListener('click',function(e){
-  var drop=document.getElementById('profileDrop');
-  var btn=document.querySelector('.nav-avatar-btn');
-  if(drop&&!drop.contains(e.target)&&btn&&!btn.contains(e.target)){
-    drop.classList.remove('open');
-    btn.classList.remove('open');
+  var drop=document.getElementById('profileDrop'),btn=document.querySelector('.nav-avatar-btn');
+  if(drop&&!drop.contains(e.target)&&btn&&!btn.contains(e.target))closeProfileMenu(false);
+});
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape'){
+    var drop=document.getElementById('profileDrop');if(drop&&drop.classList.contains('open'))closeProfileMenu(true);
+    var menu=document.getElementById('mobileMenu'),btn=document.querySelector('[aria-controls="mobileMenu"]');
+    if(menu&&menu.classList.contains('open')){menu.classList.remove('open');if(btn){btn.setAttribute('aria-expanded','false');btn.focus();}}
   }
 });
 </script>
@@ -1088,51 +1103,14 @@ document.addEventListener('DOMContentLoaded',function(){
 
 <!-- ── PAGE LOADING INDICATOR ── -->
 <div id="opc-bar" style="position:fixed;top:0;left:0;width:0%;height:3px;background:linear-gradient(90deg,#1d4ed8,#f97316,#059669);z-index:99999;transition:width .25s ease,opacity .3s ease;opacity:0;pointer-events:none"></div>
-<div id="opc-loader" style="display:none;position:fixed;inset:0;background:rgba(255,255,255,.82);backdrop-filter:blur(3px);z-index:99998;align-items:center;justify-content:center;flex-direction:column;gap:14px">
+<div id="opc-loader" role="status" aria-live="polite" aria-hidden="true" style="display:none;position:fixed;inset:0;background:rgba(255,255,255,.82);backdrop-filter:blur(3px);z-index:99998;align-items:center;justify-content:center;flex-direction:column;gap:14px">
   <div style="width:44px;height:44px;border-radius:50%;border:4px solid #e5e7eb;border-top-color:#1d4ed8;animation:opc-spin .7s linear infinite"></div>
   <div style="font-size:13px;font-weight:700;color:#374151;font-family:'Poppins','Segoe UI',sans-serif">Loading…</div>
 </div>
 <style>
 @keyframes opc-spin{to{transform:rotate(360deg)}}
 </style>
-<script>
-(function(){
-  var bar=document.getElementById('opc-bar');
-  var loader=document.getElementById('opc-loader');
-  var timer=null,overlayTimer=null,started=false;
-  function start(){
-    if(started)return; started=true;
-    bar.style.opacity='1'; bar.style.width='30%';
-    bar.style.transition='width 8s cubic-bezier(.1,.6,.3,1),opacity .3s ease';
-    clearTimeout(overlayTimer);
-    overlayTimer=setTimeout(function(){
-      loader.style.display='flex';
-    },400);
-  }
-  function finish(){
-    clearTimeout(overlayTimer);
-    bar.style.transition='width .2s ease,opacity .4s ease .2s';
-    bar.style.width='100%';
-    loader.style.display='none';
-    setTimeout(function(){bar.style.opacity='0';setTimeout(function(){bar.style.width='0%';started=false;},400);},200);
-  }
-  window.addEventListener('beforeunload',start);
-  document.addEventListener('click',function(e){
-    var a=e.target.closest('a');
-    if(!a)return;
-    var href=a.getAttribute('href');
-    if(!href||href.startsWith('#')||href.startsWith('javascript')||a.target==='_blank'||e.ctrlKey||e.metaKey||e.shiftKey)return;
-    if(href.startsWith('http')&&!href.includes(window.location.hostname))return;
-    start();
-  });
-  document.addEventListener('submit',function(e){
-    if(e.defaultPrevented)return;
-    if(e.target&&e.target.tagName==='FORM'&&e.target.method!=='dialog')start();
-  });
-  window.addEventListener('pageshow',finish);
-  document.addEventListener('DOMContentLoaded',finish);
-})();
-</script>
+<script src="{% static 'js/page-loading.js' %}?v=1" defer></script>
 </body>
 </html>
 

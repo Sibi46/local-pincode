@@ -155,55 +155,18 @@
 ═══════════════════════════════════════ -->
 {% if offer_categories %}
 <section class="offers-section" aria-labelledby="offers-heading">
-  <div class="offers-heading"><h2 id="offers-heading">Offers Near You</h2><span>{{ flash_offers.count|add:normal_offers.count }} offers</span></div>
+  <div class="offers-heading"><h2 id="offers-heading">Offers Near You</h2><span id="offer-count">{{ flash_offers.count|add:normal_offers.count }} offers</span></div>
   <p>Businesses appear here when they have an active offer. <a href="/businesses/">Browse all businesses</a></p>
   <nav class="offer-filters" aria-label="Offer categories">
     <a href="/advertise/" {% if not active_cat %}aria-current="page"{% endif %}>All</a>
     {% for val,label in offer_categories %}<a href="/advertise/?cat={{ val }}" {% if active_cat == val %}aria-current="page"{% endif %}>{{ label }}</a>{% endfor %}
   </nav>
-  {% if not flash_offers and not normal_offers %}<p class="offers-empty" role="status">No offers match this category. <a href="/advertise/">Show all offers</a></p>{% endif %}
-  {% if flash_offers or normal_offers %}
-  {% if flash_offers %}<div class="offers-heading"><h2>Available Offers</h2><span id="flashTimer">Limited time offers</span></div>{% endif %}
-  <div class="offers-grid">
-    {% for o in flash_offers %}{% include 'includes/offer_card.html' %}{% endfor %}
-    {% for o in normal_offers %}{% include 'includes/offer_card.html' %}{% endfor %}
-  </div>
-  {% endif %}
-<!-- Offer data for JS -->
-<script>
-var OFFERS_DATA = {
-  {% for o in flash_offers %}
-  "{{ o.pk }}": {
-    name: "{{ o.business_name|escapejs }}",
-    title: "{{ o.title|escapejs }}",
-    discount: "{{ o.discount_text|escapejs }}",
-    category: "{{ o.get_category_display|escapejs }}",
-    description: "{{ o.description|escapejs }}",
-    phone: "{{ o.whatsapp_phone|escapejs }}",
-    whatsapp: "{{ o.whatsapp_url|escapejs }}",
-    valid_until: "{% if o.valid_until %}{{ o.valid_until|date:'d M Y' }}{% endif %}",
-    valid_days: "{{ o.valid_days|escapejs }}",
-    store: "{{ o.store_url|escapejs }}",
-    image: "{% if o.image %}{{ o.image.url|escapejs }}{% endif %}"
-  },
-  {% endfor %}
-  {% for o in normal_offers %}
-  "{{ o.pk }}": {
-    name: "{{ o.business_name|escapejs }}",
-    title: "{{ o.title|escapejs }}",
-    discount: "{{ o.discount_text|escapejs }}",
-    category: "{{ o.get_category_display|escapejs }}",
-    description: "{{ o.description|escapejs }}",
-    phone: "{{ o.whatsapp_phone|escapejs }}",
-    whatsapp: "{{ o.whatsapp_url|escapejs }}",
-    valid_until: "{% if o.valid_until %}{{ o.valid_until|date:'d M Y' }}{% endif %}",
-    valid_days: "{{ o.valid_days|escapejs }}",
-    store: "{{ o.store_url|escapejs }}",
-    image: "{% if o.image %}{{ o.image.url|escapejs }}{% endif %}"
-  }{% if not forloop.last %},{% endif %}
-  {% endfor %}
-};
-</script>
+  <p id="offer-filter-status" role="status" aria-live="polite" class="offer-filter-status"></p>
+  <p id="offer-filter-error" role="alert" hidden></p>
+  <div id="offer-results">{% include 'includes/offer_results.html' %}</div>
+  {{ offer_data|json_script:"offer-data" }}
+  <script>var OFFERS_DATA = JSON.parse(document.getElementById('offer-data').textContent);</script>
+  <script src="{% static 'js/offer-filters.js' %}?v=1" defer></script>
 </section>
 {% endif %}
 

@@ -1970,16 +1970,36 @@ def ads_gallery(request):
     cat = request.GET.get('cat', '').strip().lower()
     if cat not in dict(LocalOffer.CATEGORY_CHOICES):
         cat = ''
-    offers_qs = LocalOffer.objects.filter(is_active=True).select_related('owner__company')
+    offers_qs = LocalOffer.objects.filter(is_active=True).filter(
+        Q(valid_until__isnull=True) | Q(valid_until__gte=timezone.localdate())
+    ).select_related('owner__company')
     if cat:
-        offers_qs = offers_qs.filter(category=cat)
+        offers_qs = offers_qs.filter(category__iexact=cat)
     from .offer_links import business_directory, attach_offer_links
     directory = business_directory()
     flash_offers  = offers_qs.filter(is_flash=True)
     normal_offers = offers_qs.filter(is_flash=False)
     for offer in list(flash_offers) + list(normal_offers):
         attach_offer_links(offer, directory)
+    offer_data = {}
+    for offer in list(flash_offers) + list(normal_offers):
+        offer_data[str(offer.pk)] = {
+            'name': offer.business_name, 'title': offer.title, 'discount': offer.discount_text,
+            'category': dict(LocalOffer.CATEGORY_CHOICES).get(offer.category.lower(), offer.category),
+            'description': offer.description, 'phone': offer.whatsapp_phone,
+            'whatsapp': offer.whatsapp_url, 'store': offer.store_url,
+            'valid_until': offer.valid_until.strftime('%d %b %Y') if offer.valid_until else '',
+            'valid_days': offer.valid_days, 'image': offer.image.url if offer.image else '',
+        }
+    results_context = {'flash_offers': flash_offers, 'normal_offers': normal_offers}
+    if request.GET.get('format') == 'json':
+        from django.template.loader import render_to_string
+        return JsonResponse({
+            'html': render_to_string('includes/offer_results.html', results_context, request=request),
+            'offers': offer_data, 'category': cat, 'count': len(offer_data),
+        })
     return render(request, 'ads_gallery.html', {
+        'offer_data': offer_data,
         'ads':               ads,
         'advertiser_banners': advertiser_banners,
         'flash_offers':      flash_offers,
@@ -2036,7 +2056,9 @@ def offer_post_success(request):
 
 def offer_store(request, pk):
     from .offer_links import attach_offer_links
-    offer = attach_offer_links(get_object_or_404(LocalOffer, pk=pk, is_active=True))
+    offer = attach_offer_links(get_object_or_404(LocalOffer.objects.filter(
+        Q(valid_until__isnull=True) | Q(valid_until__gte=timezone.localdate())
+    ), pk=pk, is_active=True))
     if offer.store_profile:
         return redirect(offer.store_url)
     return render(request, 'offer_store.html', {'offer': offer})

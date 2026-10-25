@@ -1,7 +1,10 @@
 // Mobile menu toggle
 function toggleMenu() {
     const menu = document.getElementById('mobileMenu');
-    menu.classList.toggle('open');
+    if (!menu) return;
+    const open = menu.classList.toggle('open');
+    const button = document.querySelector('[aria-controls="mobileMenu"]');
+    if (button) button.setAttribute('aria-expanded', String(open));
 }
 
 // Tab filter - categories
