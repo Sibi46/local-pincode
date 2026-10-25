@@ -17,12 +17,13 @@
 <!-- NAV -->
 <nav class="pj-nav">
   <a href="/" class="pj-logo"><img src="/static/images/ourpincod.jpeg" alt="OUR PINCODE" style="height:48px;width:auto;max-width:160px;object-fit:contain;display:block"></a>
-  <div style="display:flex;align-items:center;gap:14px">
+  <div style="display:flex;align-items:center;gap:14px;min-width:0">
     <a href="/employer/dashboard/" class="pj-back-btn"><i class="fas fa-arrow-left"></i> Dashboard</a>
   </div>
 </nav>
 
 <div class="pj-wrapper">
+  {% if company %}<header class="pj-company" style="padding:16px 0;overflow-wrap:anywhere"><strong>Posting for {{ company.company_name }}</strong>{% if company.description %}<p style="font-size:13px;line-height:1.7;color:#64748b;margin-top:8px">{{ company.description|truncatechars:240 }}</p>{% endif %}</header>{% endif %}
 
   <!-- STEP INDICATOR -->
   <div class="pj-steps">
@@ -477,6 +478,7 @@
             <button type="button" class="map-my-loc-btn" onclick="getMyLocation()"><i class="fas fa-crosshairs"></i> My Location</button>
           </div>
           <div id="job-map" class="job-map-box"></div>
+          <p id="map-status" role="status" hidden style="font-size:13px;color:#92400e;padding:10px 0">Map imagery could not load. You can still enter the job address and PIN code above; adding a map pin is optional.</p>
           <div class="map-coords-row" id="map-coords-row" style="display:none">
             <i class="fas fa-check-circle" style="color:#2e7d32"></i>
             <span id="map-coords-label">Location pinned</span>
@@ -842,6 +844,10 @@ function goStep(n) {
     s.classList.toggle('completed', i + 1 < n);
   });
   currentStep = n;
+  if (n === 4) {
+    initMap();
+    if (mapInstance) requestAnimationFrame(function(){ mapInstance.invalidateSize(); });
+  }
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -1067,11 +1073,17 @@ document.addEventListener('DOMContentLoaded', function(){
 
 /* ── Map functions (Leaflet + OpenStreetMap, no API key needed) ── */
 function initMap() {
+  if (mapInstance || document.getElementById('panel-4').classList.contains('hidden')) return;
+  if (typeof L === 'undefined') {
+    document.getElementById('job-map').textContent = 'Map unavailable. You can still enter the job address above.';
+    return;
+  }
   mapInstance = L.map('job-map', { zoomControl: true }).setView([11.0168, 76.9558], 12);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap contributors',
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>',
+    referrerPolicy: 'strict-origin-when-cross-origin',
     maxZoom: 19
-  }).addTo(mapInstance);
+  }).on('tileerror', function(){ document.getElementById('map-status').hidden = false; }).addTo(mapInstance);
   mapInstance.on('click', function(e) {
     placeMarker(e.latlng.lat, e.latlng.lng);
   });
@@ -1097,6 +1109,8 @@ function setLatLng(lat, lng) {
 }
 
 function searchMapAddress() {
+  initMap();
+  if (!mapInstance) return;
   const q = document.getElementById('map-search-input').value.trim();
   if (!q) return;
   fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(q) + '&limit=1&countrycodes=in')
@@ -1114,6 +1128,8 @@ function searchMapAddress() {
 }
 
 function getMyLocation() {
+  initMap();
+  if (!mapInstance) return;
   if (!navigator.geolocation) { alert('Geolocation not supported by your browser.'); return; }
   navigator.geolocation.getCurrentPosition(function(pos) {
     const lat = pos.coords.latitude, lng = pos.coords.longitude;
@@ -1213,7 +1229,7 @@ function submitForm(action) {
 <!-- Leaflet (served locally — no tracking issues) -->
 <link rel="stylesheet" href="/static/css/leaflet.css">
 <script src="/static/js/leaflet.js"></script>
-<script>document.addEventListener('DOMContentLoaded', initMap);</script>
+
 
 <!-- BOTTOM NAV -->
 {% include "includes/navigation.html" %}

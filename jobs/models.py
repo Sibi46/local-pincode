@@ -73,6 +73,7 @@ class MarketingAccess(models.Model):
 class CompanyProfile(models.Model):
     user         = models.OneToOneField(User, on_delete=models.CASCADE, related_name='company')
     company_name = models.CharField(max_length=200)
+    description  = models.TextField(blank=True, max_length=1000)
     industry     = models.CharField(max_length=100, blank=True)
     website      = models.URLField(blank=True)
     company_size = models.CharField(max_length=50, blank=True)

@@ -738,10 +738,10 @@ def post_job(request):
                     ref.save(update_fields=['bonus_action'])
             except Referral.DoesNotExist:
                 pass
-        return redirect('employer_dashboard')
+        return redirect('/employer/dashboard/#pending-jobs' if status == 'draft' else '/employer/dashboard/#approval-pending')
 
     industries = Industry.objects.filter(is_active=True).prefetch_related('roles')
-    return render(request, 'post_job.html', {'industries': industries})
+    return render(request, 'post_job.html', {'industries': industries, 'company': getattr(user, 'company', None)})
 
 
 @login_required
@@ -1042,7 +1042,8 @@ def employer_dashboard(request):
     profile_incomplete = profile_pct < 70
 
     show_referral_popup = request.session.pop('show_referral_popup', False)
-    referral_link = request.build_absolute_uri(f'/register/?ref={request.user.referral_code}') if request.user.referral_code else ''
+    from .utils import ensure_referral_code
+    referral_link = request.build_absolute_uri(f'/register/?ref={ensure_referral_code(request.user)}')
     job_posted_title = request.session.pop('show_job_posted_popup', None)
 
     from .models import Flick, FlickLike
@@ -1160,6 +1161,10 @@ def employer_profile_save(request):
         return redirect('employer_dashboard')
     user = request.user
     p = request.POST
+    description = p.get('description')
+    if description is not None and len(description.strip()) > 1000:
+        messages.error(request, 'Keep your business description within 1,000 characters.')
+        return redirect('/employer/dashboard/#my-profile')
     user.city    = p.get('city', user.city).strip()
     user.address = p.get('address', user.address).strip()
     user.pincode = p.get('pincode', user.pincode).strip()
@@ -1182,6 +1187,8 @@ def employer_profile_save(request):
     except Exception:
         prof = None
     if prof:
+        if description is not None:
+            prof.description = description.strip()
         prof.industry     = p.get('industry', prof.industry).strip()
         prof.company_size = p.get('company_size', prof.company_size).strip()
         prof.website      = p.get('website', prof.website).strip()
@@ -1214,7 +1221,8 @@ def jobseeker_dashboard(request):
     notifs = UserNotification.objects.filter(user=request.user).order_by('-created_at')[:12]
     unread_notif_count = UserNotification.objects.filter(user=request.user, is_read=False).count()
     show_referral_popup = request.session.pop('show_referral_popup', False)
-    referral_link = request.build_absolute_uri(f'/register/?ref={request.user.referral_code}') if request.user.referral_code else ''
+    from .utils import ensure_referral_code
+    referral_link = request.build_absolute_uri(f'/register/?ref={ensure_referral_code(request.user)}')
     from .models import Flick, FlickLike
     recent_flicks = Flick.objects.filter(user=request.user).select_related('user').prefetch_related('likes').order_by('-created_at')[:12]
     liked_ids = set(FlickLike.objects.filter(user=request.user).values_list('flick_id', flat=True))
@@ -3625,10 +3633,8 @@ def delete_flick(request, pk):
 @login_required
 def referral_dashboard(request):
     user = request.user
-    if not user.referral_code:
-        from .utils import generate_referral_code
-        user.referral_code = generate_referral_code()
-        user.save(update_fields=['referral_code'])
+    from .utils import ensure_referral_code
+    ensure_referral_code(user)
 
     wallet, _ = PointsWallet.objects.get_or_create(user=user)
     transactions = wallet.transactions.all()[:20]

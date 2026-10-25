@@ -153,6 +153,11 @@ body{background:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',
     <div class="bp-bio">{{ profile.industry }}</div>
     {% endif %}
 
+    <section class="bp-about" style="padding:16px 0;text-align:left;overflow-wrap:anywhere">
+      <h2 style="font-size:15px;font-weight:800;margin:0 0 8px">About {{ profile.company_name }}</h2>
+      {% if profile.description %}<p style="font-size:13px;line-height:1.8;white-space:pre-line;margin:0">{{ profile.description }}</p>{% else %}<p style="font-size:13px;color:#64748b;margin:0">This business has not added a description yet.</p>{% endif %}
+    </section>
+
     <div class="bp-meta">
       {% if owner.city or owner.pincode %}
       <span><i class="fas fa-map-marker-alt" style="color:#e65100"></i> {{ owner.city }}{% if owner.pincode %} — {{ owner.pincode }}{% endif %}</span>

@@ -154,15 +154,6 @@
                 </div>
                 {% endif %}
 
-                <!-- Notification Bell (voucher nav) -->
-                {% if messages %}
-                <div class="nav-bell-wrap" style="position:relative">
-                  <button class="nav-bell-btn" onclick="toggleBellDrop(event)" aria-label="Notifications" style="background:none;border:none;cursor:pointer;position:relative;padding:6px 8px;display:flex;align-items:center">
-                    <i class="fas fa-bell" style="font-size:20px;color:#444"></i>
-                    <span class="nav-bell-badge">{{ messages|length }}</span>
-                  </button>
-                </div>
-                {% endif %}
                 <!-- Profile dropdown -->
                 <div class="nav-avatar-wrap">
                     <button class="nav-avatar-btn" onclick="toggleProfileMenu(event)" aria-label="Profile menu">
