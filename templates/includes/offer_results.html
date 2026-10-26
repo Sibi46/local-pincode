@@ -1,0 +1,8 @@
+{% if not flash_offers and not normal_offers %}<p class="offers-empty" role="status">No offers match this category. <a href="/advertise/">Show all offers</a></p>{% endif %}
+{% if flash_offers or normal_offers %}
+{% if flash_offers %}<div class="offers-heading"><h2>Available Offers</h2><span id="flashTimer">Limited time offers</span></div>{% endif %}
+<div class="offers-grid">
+  {% for o in flash_offers %}{% include 'includes/offer_card.html' %}{% endfor %}
+  {% for o in normal_offers %}{% include 'includes/offer_card.html' %}{% endfor %}
+</div>
+{% endif %}

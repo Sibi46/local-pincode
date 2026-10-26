@@ -1,4 +1,5 @@
 import uuid
+import secrets
 from datetime import timedelta
 
 from django.conf import settings
@@ -8,6 +9,15 @@ from django.db import models
 from django.utils import timezone
 
 from .uploads import private_storage, upload_path, validate_photo, validate_video
+from .identity_uploads import identity_storage, validate_identity, validate_profile_photo
+
+
+def contributor_reference():
+    return 'NDC-' + secrets.token_hex(8).upper()
+
+
+def submission_reference():
+    return 'ND-' + secrets.token_hex(8).upper()
 
 
 class NewsAgent(models.Model):
@@ -129,3 +139,46 @@ class BirthdayCard(models.Model):
     theme = models.CharField(max_length=12, choices=[('sunshine', 'Sunshine'), ('rose', 'Rose'), ('sky', 'Sky')], default='sunshine')
     is_public = models.BooleanField(default=False, help_text='Anyone with the link can see and download this card.')
     created_at = models.DateTimeField(auto_now_add=True)
+
+
+class NewsContributor(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    reference = models.CharField(max_length=24, unique=True, default=contributor_reference, editable=False)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name='news_contributors')
+    phone = models.CharField(max_length=10, unique=True)
+    name = models.CharField(max_length=120)
+    pincode = models.ForeignKey('jobs.PinCode', on_delete=models.PROTECT)
+    address = models.TextField(max_length=1000)
+    aadhaar = models.FileField(upload_to=upload_path, storage=identity_storage, validators=[validate_identity])
+    profile_photo = models.FileField(upload_to=upload_path, storage=identity_storage, validators=[validate_profile_photo])
+    phone_verified_at = models.DateTimeField()
+    document_checked_at = models.DateTimeField(null=True, blank=True)
+    document_checked_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name='+')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
+class NewsSubmission(models.Model):
+    class Status(models.TextChoices):
+        PENDING = 'pending', 'Waiting for editor review'
+        REJECTED = 'rejected', 'Not approved'
+        PUBLISHED = 'published', 'Published'
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    reference = models.CharField(max_length=24, unique=True, default=submission_reference, editable=False)
+    contributor = models.ForeignKey(NewsContributor, on_delete=models.PROTECT, related_name='submissions')
+    topic = models.CharField(max_length=180)
+    body = models.TextField(max_length=12000)
+    status = models.CharField(max_length=12, choices=Status.choices, default=Status.PENDING)
+    terms_version = models.CharField(max_length=20, default='news-sharing-v1', editable=False)
+    terms_accepted_at = models.DateTimeField(editable=False)
+    accuracy_accepted_at = models.DateTimeField(editable=False)
+    submission_token = models.UUIDField(unique=True, editable=False)
+    reviewed_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name='reviewed_news_submissions')
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    review_note = models.TextField(max_length=2000, blank=True)
+    published_story = models.OneToOneField(NewsItem, null=True, blank=True, on_delete=models.PROTECT, related_name='reader_submission')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [models.Index(fields=['status', '-created_at'])]

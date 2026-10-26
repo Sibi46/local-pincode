@@ -2,6 +2,7 @@
 {% block title %}OUR PINCODE · The Local Newspaper{% endblock %}
 {% block extra_css %}{{ block.super }}{% include 'newsdesk/newspaper_styles.html' %}{% endblock %}
 {% block news_content %}
+<div class="nd-reader-entry" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:14px 0;border-bottom:1px solid #d8d6cc"><span style="font-size:13px">Have a local story to share?</span><a class="nd-btn" href="{% url 'newsdesk:share' %}">Share your news</a></div>
 <header class="edition-header">
   <div class="newspaper-masthead"><p>YOUR NEIGHBOURHOOD. YOUR NEWSPAPER.</p><h1>OUR PINCODE</h1><span>NEWS &amp; EVENTS · PEOPLE &amp; COMMUNITY</span></div>
   <div class="edition-utility"><time datetime="{% now 'Y-m-d' %}">{% now 'D, d M Y' %}</time><a class="edition-logo" href="{% url 'newsdesk:feed' %}">OUR PINCODE<small>NEWS DESK</small></a><div>{% if can_manage %}<a href="{% url 'newsdesk:manage' %}">My desk &nearr;</a>{% else %}<a href="#nd-filters">Your edition &darr;</a>{% endif %}</div></div>

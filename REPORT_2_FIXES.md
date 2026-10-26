@@ -43,7 +43,7 @@ python manage.py makemigrations --check --dry-run --settings=jobportal.test_sett
 python manage.py test jobs.test_report2 jobs.test_business_registration jobs.test_corrections jobs.test_application_flow --settings=jobportal.test_settings --noinput
 ```
 
-All 30 regression tests passed. Django system checks and the migration consistency check passed.
+All 60 combined regression tests passed, including the production news submission, usability, registration and application tests. Django system checks and the migration consistency check passed. Production's existing `0059_companyprofile_description` migration is preserved; review features are added by `0060_business_reviews_and_rewards`.
 
 Homepage follow-up
 ------------------

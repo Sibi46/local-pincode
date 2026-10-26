@@ -65,6 +65,8 @@ def network_feed(request):
         own_posts[connection.post_id].responders.append(connection)
     return render(request, 'network/feed.html', {
         'form': form, 'page': page, 'pincode': pin, 'tab': tab, 'activities': ACTIVITIES,
+        'account_notifications_url': reverse('employer_dashboard' if request.user.is_employer() else 'jobseeker_dashboard') + '#notifications',
+        'account_unread_count': UserNotification.objects.filter(user=request.user, is_read=False).count(),
     }, status=400 if request.method == 'POST' else 200)
 
 

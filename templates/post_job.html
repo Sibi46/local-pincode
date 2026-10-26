@@ -24,7 +24,7 @@
 </nav>
 
 <div class="pj-wrapper">
-  {% if company %}<header style="padding:16px 0"><strong>Posting for {{ company.company_name }}</strong>{% if company.description %}<p>{{ company.description|truncatechars:240 }}</p>{% endif %}</header>{% endif %}
+  {% if company %}<header class="pj-company" style="padding:16px 0;overflow-wrap:anywhere"><strong>Posting for {{ company.company_name }}</strong>{% if company.description %}<p style="font-size:13px;line-height:1.7;color:#64748b;margin-top:8px">{{ company.description|truncatechars:240 }}</p>{% endif %}</header>{% endif %}
 
   <!-- STEP INDICATOR -->
   <div class="pj-steps">
@@ -1080,8 +1080,9 @@ function initMap() {
     return;
   }
   mapInstance = L.map('job-map', { zoomControl: true }).setView([11.0168, 76.9558], 12);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap contributors',
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>',
+    referrerPolicy: 'strict-origin-when-cross-origin',
     maxZoom: 19
   }).on('tileerror', function(){ document.getElementById('map-status').hidden = false; }).addTo(mapInstance);
   mapInstance.on('click', function(e) {

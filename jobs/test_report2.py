@@ -54,7 +54,7 @@ class ReportTwoTests(TestCase):
         self.assertEqual(str(job.latitude), '13.082680')
         self.assertFalse(job.is_approved)
         response = self.client.get('/employer/dashboard/#approval-pending')
-        self.assertContains(response, 'Under Review (1)')
+        self.assertContains(response, 'Under review (1)')
         self.assertContains(response, 'Drafts (1)')
         self.assertContains(self.client.get('/post-job/'), 'Posting for Neighbourhood Store')
 

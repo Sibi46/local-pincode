@@ -58,3 +58,23 @@ html[data-theme=dark] :is(.gi-tabs-bar,.gi-sidebar .info-card,.hc-box,.hc-box-re
 @media(max-width:840px){.gi-body.gi-balanced{grid-template-columns:minmax(0,1fr);}.gi-body .reel-feed{max-width:460px;}}
 
 .gi-body.gi-single{grid-template-columns:minmax(0,460px);max-width:520px}
+
+/* Consistent navigation and controls for local discovery. */
+.navbar .hamburger{border:0;background:transparent;color:var(--opc-text,#263238);min-width:44px;min-height:44px;padding:10px;cursor:pointer;font:inherit}
+.navbar .nav-avatar-btn{min-width:44px;min-height:44px;justify-content:center}
+.navbar .nav-profile-drop{max-width:calc(100vw - 32px)}
+.navbar .nav-profile-drop a,.navbar .mobile-menu a{min-height:44px;box-sizing:border-box}
+.navbar :is(button,a):focus-visible{outline:3px solid #7c3aed;outline-offset:3px}
+.mobile-menu.open{max-height:calc(100dvh - 130px);overflow-y:auto;overscroll-behavior:contain}
+.offers-page .offer-filters a{min-height:44px;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box}
+.offers-page .offer-actions :is(a,button){min-height:44px;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;flex:1}
+.offers-page .offers-heading{gap:12px;flex-wrap:wrap}
+.offers-page [hidden]{display:none!important}
+.offers-page .offer-filter-status{font-size:13px;color:var(--opc-muted,#64748b);margin:6px 0;min-height:20px}
+.offers-page #offer-filter-error{font-size:14px;color:#9a3412;background:#fff7ed;padding:12px;border-radius:10px;margin-bottom:14px}
+.offers-page #offer-results[aria-busy=true]{opacity:.65}
+.network .nw-utilities{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 20px}
+.network .nw-utilities a{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:10px 14px;border:1px solid #d8e4dd;border-radius:12px;background:var(--opc-surface,#fff);color:var(--opc-text,#24463b);font-size:13px;font-weight:650;text-decoration:none;box-sizing:border-box}
+.network .nw-utilities a:hover{border-color:#19735b}
+.network .nw-unread{background:#19735b;color:#fff;padding:2px 6px;border-radius:20px;font-size:11px;min-width:18px;text-align:center}
+@media(max-width:600px){.network .nw-utilities{gap:6px}.network .nw-utilities a{padding:10px;font-size:12px;flex:1}.navbar .nav-container{padding-left:12px;padding-right:12px}}
