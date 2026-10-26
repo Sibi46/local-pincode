@@ -133,6 +133,19 @@ def generate_referral_code():
     return ''.join(random.choices(chars, k=12))
 
 
+def ensure_referral_code(user):
+    """Repair legacy accounts before displaying a share link, preserving existing codes."""
+    from django.db import transaction
+    from .models import User
+    with transaction.atomic():
+        locked = User.objects.select_for_update().get(pk=user.pk)
+        if not locked.referral_code:
+            locked.referral_code = generate_referral_code()
+            locked.save(update_fields=['referral_code'])
+        user.referral_code = locked.referral_code
+    return user.referral_code
+
+
 def generate_biz_id():
     """Generate a unique BIZXXXXXX salesman business ID (no hyphens)."""
     import random

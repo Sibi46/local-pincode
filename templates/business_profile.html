@@ -153,6 +153,11 @@ body{background:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',
     <div class="bp-bio">{{ profile.industry }}</div>
     {% endif %}
 
+    <section class="bp-about" style="padding:16px 0;text-align:left;overflow-wrap:anywhere">
+      <h2 style="font-size:15px;font-weight:800;margin:0 0 8px">About {{ profile.company_name }}</h2>
+      {% if profile.description %}<p style="font-size:13px;line-height:1.8;white-space:pre-line;margin:0">{{ profile.description }}</p>{% else %}<p style="font-size:13px;color:#64748b;margin:0">This business has not added a description yet.</p>{% endif %}
+    </section>
+
     <div class="bp-meta">
       {% if owner.city or owner.pincode %}
       <span><i class="fas fa-map-marker-alt" style="color:#e65100"></i> {{ owner.city }}{% if owner.pincode %} — {{ owner.pincode }}{% endif %}</span>
@@ -328,6 +333,7 @@ body{background:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',
           {% if f.title or f.caption %}
           <div class="flick-caption">{{ f.title|default:f.caption|truncatechars:40 }}</div>
           {% endif %}
+          {% if request.user.is_authenticated %}<button type="button" onclick="event.stopPropagation();likeBusinessPost(this,{{ f.pk }})" aria-pressed="{% if f.pk in liked_flick_ids %}true{% else %}false{% endif %}" style="position:relative;z-index:2;padding:10px;width:100%">{% if f.pk in liked_flick_ids %}Liked{% else %}Like{% endif %} · {{ f.like_count }}</button>{% else %}<a href="/login/?next={{ request.path|urlencode }}" onclick="event.stopPropagation()">Sign in to like · {{ f.like_count }}</a>{% endif %}
         </div>
         {% endfor %}
       </div>
@@ -336,6 +342,7 @@ body{background:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',
     {% endif %}
   </div>
 
+{% include 'includes/business_reviews.html' %}
 </div><!-- /bp-wrap -->
 
 <!-- LIGHTBOX -->
@@ -351,6 +358,18 @@ body{background:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',
 </div>
 
 <script>
+async function likeBusinessPost(button, id) {
+  button.disabled = true;
+  try {
+    const response = await fetch('/flicks/' + id + '/like/', {method:'POST',headers:{'X-CSRFToken':'{{ csrf_token }}'},credentials:'same-origin'});
+    if (!response.ok) throw new Error('Like failed');
+    const data = await response.json();
+    if (!data.success) throw new Error('Like failed');
+    button.setAttribute('aria-pressed', String(data.liked));
+    button.textContent = (data.liked ? 'Liked' : 'Like') + ' · ' + data.count;
+  } catch (error) { alert('Could not update your like. Please try again.'); }
+  finally { button.disabled = false; }
+}
 function switchTab(id, el) {
   document.querySelectorAll('.bp-section').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.bp-tab').forEach(t => t.classList.remove('active'));

@@ -264,6 +264,13 @@
 
   <!-- TABS -->
   <div class="ig-tabs" id="igTabs">
+    <button type="button" class="ig-tab" onclick="showSection('paid-pending',this)" data-sec="paid-pending">Payment Review ({{ paid_pending_jobs.count }})</button>
+    <button type="button" class="ig-tab" onclick="showSection('expired-jobs',this)" data-sec="expired-jobs">Expired ({{ expired_jobs.count }})</button>
+    <button type="button" class="ig-tab" onclick="showSection('closed-jobs',this)" data-sec="closed-jobs">Closed ({{ closed_jobs.count }})</button>
+    <a class="ig-tab" href="/referral/"><i class="fas fa-gift"></i>Refer &amp; Earn</a>
+    <button type="button" class="ig-tab" onclick="showSection('approval-pending',this)" data-sec="approval-pending">Under Review ({{ approval_pending.count }})</button>
+    <button type="button" class="ig-tab" onclick="showSection('pending-jobs',this)" data-sec="pending-jobs">Drafts ({{ pending_jobs.count }})</button>
+    <button type="button" class="ig-tab" onclick="showSection('plan-pending',this)" data-sec="plan-pending">Choose Plan ({{ plan_pending.count }})</button>
     <button type="button" class="ig-tab" onclick="showSection('coupons',this)" data-sec="coupons"><i class="fas fa-ticket-alt"></i>Coupons</button>
     <button type="button" class="ig-tab" onclick="window.location.href='/offers/post/'"><i class="fas fa-tag" style="color:#FF5722"></i>Offer</button>
     <button type="button" class="ig-tab" onclick="showSection('flicks',this)" data-sec="flicks"><i class="fas fa-bolt" style="color:#f59e0b"></i>Flicks</button>
@@ -1028,6 +1035,14 @@
             <input type="text" value="{{ profile.company_name|default:'' }}" disabled style="width:100%;padding:10px 14px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:13px;background:#f9f9f9;color:#888;box-sizing:border-box">
             <small style="color:#aaa;font-size:11px">Cannot be changed</small>
           </div>
+          <div style="grid-column:1/-1">
+            <label for="businessDescription" style="font-size:13px;font-weight:700;color:#444;display:block;margin-bottom:6px">About your business</label>
+            <textarea id="businessDescription" name="description" maxlength="1000" rows="4" placeholder="Tell customers what you do, your products or services, and what makes your business special." style="width:100%;padding:10px 14px;border:1.5px solid #dde1ea;border-radius:8px;font:inherit;font-size:13px;resize:vertical;box-sizing:border-box">{{ profile.description }}</textarea>
+            <small style="color:#64748b">Up to 1,000 characters. This description appears on your public business profile.</small>
+            <p><label for="reviewRewardPercent">Optional review voucher discount (%)</label><input id="reviewRewardPercent" type="number" min="0" max="50" name="review_reward_percent" value="{{ profile.review_reward_percent|default:0 }}"></p>
+            <small>0 disables vouchers. Set 1–50 to offer that discount for each customer’s first honest review, regardless of rating. Vouchers expire in 30 days and are redeemed once at your business.</small>
+            {% if profile.company_id %}<p><a href="{% url 'business_profile' profile.company_id %}#customer-reviews">Customer reviews and monthly reports</a></p>{% endif %}
+          </div>
           <div>
             <label style="font-size:13px;font-weight:700;color:#444;display:block;margin-bottom:6px"><i class="fas fa-phone"></i> Mobile</label>
             <input type="text" value="{{ request.user.phone }}" disabled style="width:100%;padding:10px 14px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:13px;background:#f9f9f9;color:#888;box-sizing:border-box">
@@ -1570,9 +1585,9 @@ document.addEventListener('DOMContentLoaded', function(){
         </div>
       </div>
 
-<button onclick="document.getElementById('jobPostedOverlay').style.display='none'"
+<button onclick="document.getElementById('jobPostedOverlay').style.display='none';showSection('approval-pending')"
               style="width:100%;padding:13px;background:#0a66c2;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:800;cursor:pointer">
-        <i class="fas fa-check-circle"></i> Got it, Check Dashboard
+        <i class="fas fa-check-circle"></i> View submitted jobs
       </button>
     </div>
   </div>
@@ -1609,7 +1624,7 @@ document.addEventListener('DOMContentLoaded', function(){
       <div style="background:#f7f9fc;border:1.5px solid #d0e4f7;border-radius:10px;display:flex;align-items:center;gap:8px;padding:10px 12px;margin-bottom:16px">
         <input id="refPopupLink" type="text" value="{{ referral_link }}" readonly
                style="flex:1;border:none;background:none;font-size:12px;color:#333;outline:none;min-width:0;font-weight:600">
-        <button onclick="copyRefPopup()" style="background:#0a66c2;color:#fff;border:none;border-radius:7px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">
+        <button onclick="copyRefPopup(event)" style="background:#0a66c2;color:#fff;border:none;border-radius:7px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">
           <i class="fas fa-copy"></i> Copy
         </button>
       </div>
@@ -1629,10 +1644,12 @@ document.addEventListener('DOMContentLoaded', function(){
 </style>
 <script>
 function closeRefPopup(){document.getElementById('refPopupOverlay').style.display='none';}
-function copyRefPopup(){
+function copyRefPopup(event){
   var inp=document.getElementById('refPopupLink');
   inp.select(); inp.setSelectionRange(0,9999);
-  try{navigator.clipboard.writeText(inp.value);}catch(e){document.execCommand('copy');}
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(inp.value).catch(function(){ document.execCommand('copy'); });
+  } else { document.execCommand('copy'); }
   var btn=event.currentTarget; var orig=btn.innerHTML;
   btn.innerHTML='<i class="fas fa-check"></i> Copied!'; btn.style.background='#2e7d32';
   setTimeout(function(){btn.innerHTML=orig;btn.style.background='#0a66c2';},2000);

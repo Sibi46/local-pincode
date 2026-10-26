@@ -73,6 +73,8 @@ class MarketingAccess(models.Model):
 class CompanyProfile(models.Model):
     user         = models.OneToOneField(User, on_delete=models.CASCADE, related_name='company')
     company_name = models.CharField(max_length=200)
+    description = models.TextField(blank=True, max_length=1000)
+    review_reward_percent = models.PositiveSmallIntegerField(default=0, help_text='Optional review voucher discount, 0 disables rewards.')
     industry     = models.CharField(max_length=100, blank=True)
     website      = models.URLField(blank=True)
     company_size = models.CharField(max_length=50, blank=True)
@@ -83,11 +85,52 @@ class CompanyProfile(models.Model):
     def __str__(self):
         return self.company_name
 
+    def get_absolute_url(self):
+        from django.urls import reverse
+        return reverse('business_profile', args=[self.company_id])
+
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
         if not self.company_id:
             self.company_id = f'CO-{self.pk:06d}'
             CompanyProfile.objects.filter(pk=self.pk).update(company_id=self.company_id)
+
+
+class BusinessReview(models.Model):
+    company = models.ForeignKey(CompanyProfile, on_delete=models.CASCADE, related_name='reviews')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='business_reviews')
+    rating = models.PositiveSmallIntegerField()
+    text = models.TextField(max_length=2000)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-updated_at']
+        constraints = [
+            models.UniqueConstraint(fields=['company', 'user'], name='one_review_per_business_customer'),
+            models.CheckConstraint(condition=models.Q(rating__gte=1, rating__lte=5), name='business_review_rating_range'),
+        ]
+
+
+class ReviewVoucher(models.Model):
+    review = models.OneToOneField(BusinessReview, on_delete=models.CASCADE, related_name='reward_voucher')
+    code = models.CharField(max_length=16, unique=True)
+    discount_percent = models.PositiveSmallIntegerField()
+    expires_at = models.DateTimeField()
+    redeemed_at = models.DateTimeField(null=True, blank=True)
+
+
+class BusinessReviewReport(models.Model):
+    company = models.ForeignKey(CompanyProfile, on_delete=models.CASCADE, related_name='review_reports')
+    month = models.DateField()
+    summary = models.TextField()
+    ai_generated = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    emailed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-month']
+        constraints = [models.UniqueConstraint(fields=['company', 'month'], name='one_business_report_per_month')]
 
 
 class ShopProfile(models.Model):

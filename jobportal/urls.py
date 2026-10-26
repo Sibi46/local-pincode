@@ -3,6 +3,7 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from jobs import views
+from jobs import business_reviews
 from django.contrib.sitemaps import views as sitemap_views
 from .seo import SITEMAPS, robots, sitemap_index
 
@@ -44,6 +45,8 @@ urlpatterns = [
     path('offers/mine/', views.my_offers, name='my_offers'),
     path('offers/<int:pk>/store/', views.offer_store, name='offer_store'),
     path('business/<str:company_id>/', views.business_profile, name='business_profile'),
+    path('business/<str:company_id>/review/', business_reviews.submit_review, name='business_review'),
+    path('business/<str:company_id>/review-voucher/redeem/', business_reviews.redeem_review_voucher, name='redeem_review_voucher'),
 
     # Jobs
     path('jobs/',                   views.job_list,           name='job_list'),

@@ -738,10 +738,11 @@ def post_job(request):
                     ref.save(update_fields=['bonus_action'])
             except Referral.DoesNotExist:
                 pass
-        return redirect('employer_dashboard')
+        section = 'pending-jobs' if status == 'draft' else 'approval-pending'
+        return redirect('/employer/dashboard/#' + section)
 
     industries = Industry.objects.filter(is_active=True).prefetch_related('roles')
-    return render(request, 'post_job.html', {'industries': industries})
+    return render(request, 'post_job.html', {'industries': industries, 'company': getattr(user, 'company', None)})
 
 
 @login_required
@@ -842,6 +843,8 @@ def edit_job(request, pk):
 
 def business_list(request):
     from django.core.paginator import Paginator
+    from django.db.models import Avg
+    from datetime import timedelta
     businesses = CompanyProfile.objects.filter(user__is_active=True).exclude(company_name='').select_related('user')
     pincode = request.GET.get('pincode', '').strip()
     query = request.GET.get('q', '').strip()
@@ -849,8 +852,15 @@ def business_list(request):
         businesses = businesses.filter(user__pincode=pincode)
     if query:
         businesses = businesses.filter(company_name__icontains=query)
+    businesses = businesses.annotate(review_count=Count('reviews'), average_rating=Avg('reviews__rating'),
+        recent_reviews=Count('reviews', filter=Q(reviews__created_at__gte=timezone.now() - timedelta(days=30))))
+    sort = request.GET.get('sort', 'name')
+    ordering = {'popular': ['-review_count', '-average_rating', 'company_name'],
+                'trending': ['-recent_reviews', '-average_rating', 'company_name'],
+                'rating': ['-average_rating', '-review_count', 'company_name']}.get(sort, ['company_name'])
     return render(request, 'business_list.html', {
-        'businesses': Paginator(businesses.order_by('company_name'), 30).get_page(request.GET.get('page')),
+        'sort': sort,
+        'businesses': Paginator(businesses.order_by(*ordering), 30).get_page(request.GET.get('page')),
         'pincode': pincode, 'query': query,
     })
 
@@ -869,8 +879,10 @@ def my_offers(request):
 
 
 def business_profile(request, company_id):
+    from .business_reviews import snapshot, badge
+    from .models import ReviewVoucher, FlickLike
     from .models import CompanyProfile, Flick, LocalOffer, AdPost
-    profile = get_object_or_404(CompanyProfile, company_id=company_id)
+    profile = get_object_or_404(CompanyProfile, company_id=company_id, user__is_active=True)
     owner = profile.user
     from community.models import FamilySetup
     from portal.models import Community
@@ -930,7 +942,23 @@ def business_profile(request, company_id):
     except Exception:
         pass
 
+    reviews = profile.reviews.select_related('user')
+    own_review = reviews.filter(user=request.user).first() if request.user.is_authenticated else None
+    from django.core.paginator import Paginator
+    review_page = Paginator(reviews, 10).get_page(request.GET.get('review_page'))
+    from django.db.models import Avg
+    for review in review_page:
+        review.badge_label = badge(review.user)
     return render(request, 'business_profile.html', {
+        'reviews': review_page,
+        'review_count': reviews.count(),
+        'review_average': reviews.aggregate(value=Avg('rating'))['value'],
+        'review_snapshot': snapshot(reviews),
+        'own_review': own_review,
+        'review_voucher': ReviewVoucher.objects.filter(review=own_review).first() if own_review else None,
+        'review_reports': profile.review_reports.all()[:12] if request.user == owner else [],
+        'latest_ai_report': profile.review_reports.filter(ai_generated=True).first(),
+        'liked_flick_ids': set(FlickLike.objects.filter(user=request.user).values_list('flick_id', flat=True)) if request.user.is_authenticated else set(),
         'public_family': public_family,
         'joined_communities': joined_communities,
         'profile': profile,
@@ -1042,7 +1070,9 @@ def employer_dashboard(request):
     profile_incomplete = profile_pct < 70
 
     show_referral_popup = request.session.pop('show_referral_popup', False)
-    referral_link = request.build_absolute_uri(f'/register/?ref={request.user.referral_code}') if request.user.referral_code else ''
+    from .utils import ensure_referral_code
+    ensure_referral_code(user)
+    referral_link = request.build_absolute_uri(f'/register/?ref={user.referral_code}')
     job_posted_title = request.session.pop('show_job_posted_popup', None)
 
     from .models import Flick, FlickLike
@@ -1160,6 +1190,10 @@ def employer_profile_save(request):
         return redirect('employer_dashboard')
     user = request.user
     p = request.POST
+    description = p.get('description')
+    if description is not None and len(description.strip()) > 1000:
+        messages.error(request, 'Keep your business description within 1,000 characters.')
+        return redirect('/employer/dashboard/#my-profile')
     user.city    = p.get('city', user.city).strip()
     user.address = p.get('address', user.address).strip()
     user.pincode = p.get('pincode', user.pincode).strip()
@@ -1182,9 +1216,16 @@ def employer_profile_save(request):
     except Exception:
         prof = None
     if prof:
+        if description is not None:
+            prof.description = description.strip()
         prof.industry     = p.get('industry', prof.industry).strip()
         prof.company_size = p.get('company_size', prof.company_size).strip()
         prof.website      = p.get('website', prof.website).strip()
+        try:
+            reward_percent = int(p.get('review_reward_percent', prof.review_reward_percent))
+        except (TypeError, ValueError):
+            reward_percent = prof.review_reward_percent
+        prof.review_reward_percent = max(0, min(50, reward_percent))
         if request.FILES.get('logo'):
             prof.logo = request.FILES['logo']
         if request.FILES.get('banner_image'):
@@ -1214,7 +1255,8 @@ def jobseeker_dashboard(request):
     notifs = UserNotification.objects.filter(user=request.user).order_by('-created_at')[:12]
     unread_notif_count = UserNotification.objects.filter(user=request.user, is_read=False).count()
     show_referral_popup = request.session.pop('show_referral_popup', False)
-    referral_link = request.build_absolute_uri(f'/register/?ref={request.user.referral_code}') if request.user.referral_code else ''
+    from .utils import ensure_referral_code
+    referral_link = request.build_absolute_uri(f'/register/?ref={ensure_referral_code(request.user)}')
     from .models import Flick, FlickLike
     recent_flicks = Flick.objects.filter(user=request.user).select_related('user').prefetch_related('likes').order_by('-created_at')[:12]
     liked_ids = set(FlickLike.objects.filter(user=request.user).values_list('flick_id', flat=True))
@@ -3625,10 +3667,8 @@ def delete_flick(request, pk):
 @login_required
 def referral_dashboard(request):
     user = request.user
-    if not user.referral_code:
-        from .utils import generate_referral_code
-        user.referral_code = generate_referral_code()
-        user.save(update_fields=['referral_code'])
+    from .utils import ensure_referral_code
+    ensure_referral_code(user)
 
     wallet, _ = PointsWallet.objects.get_or_create(user=user)
     transactions = wallet.transactions.all()[:20]
