@@ -33,5 +33,6 @@
   });
   track.addEventListener('scroll', update, {passive:true});
   window.addEventListener('resize', update);
+  window.addEventListener('welcomeintro:opened', () => requestAnimationFrame(update));
   update();
 })();
