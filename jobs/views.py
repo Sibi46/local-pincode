@@ -993,7 +993,9 @@ def business_profile(request, company_id):
 
 # ── DASHBOARDS ────────────────────────────────────────────────────────────────
 @login_required
-def employer_dashboard(request):
+def employer_dashboard(request, profile_editor=None):
+    if request.method == 'POST' and profile_editor is None:
+        return profile_edit(request)
     user = request.user
 
     # ── Auto-generate salesman BIZ ID for existing employers ──
@@ -1126,7 +1128,11 @@ def employer_dashboard(request):
 
     from .dashboard_features import registered_features
     active_features, pending_features = registered_features(user)
+    from .account import dashboard_profile_context
+    editor = dashboard_profile_context(user, profile)
+    editor.update(profile_editor or {})
     return render(request, 'employer_dashboard.html', {
+        **editor,
         'active_features': active_features, 'pending_features': pending_features,
         'registered_businesses': CompanyProfile.objects.filter(user__is_active=True).exclude(
             company_name='').select_related('user').order_by('-pk')[:20],
@@ -4105,9 +4111,14 @@ def my_accounts(request):
 @transaction.atomic
 def profile_edit(request):
     import re
-    from .account import LocationPreferencesForm, BusinessDetailsForm, profile_features, safe_return
+    from .account import LocationPreferencesForm, BusinessDetailsForm, DashboardPersonalForm, DashboardSeekerForm, profile_features, safe_return
     user = request.user
     company = getattr(user, 'company', None)
+    business_user = user.is_employer() or company is not None
+    if request.method == 'GET' and business_user:
+        from urllib.parse import urlencode
+        query = '?' + urlencode({'next': request.GET['next']}) if request.GET.get('next') else ''
+        return redirect('/employer/dashboard/' + query + '#my-profile')
 
     # All account types can keep a personal avatar independently of a business logo.
     if user.user_type in ('individual', 'employee', 'freelancer') or 'photo' in request.FILES:
@@ -4118,8 +4129,10 @@ def profile_edit(request):
     location_data = {field: getattr(user, field) for field in LocationPreferencesForm.base_fields}
     location_form = LocationPreferencesForm(initial=location_data)
     business_form = BusinessDetailsForm(instance=company) if company else None
+    personal_form = DashboardPersonalForm(instance=user)
+    seeker_form = DashboardSeekerForm(instance=seeker) if seeker else None
     def context(**extra):
-        return {'seeker': seeker, 'company': company, 'location_form': location_form,
+        return {'personal_form': personal_form, 'seeker_form': seeker_form, 'seeker': seeker, 'company': company, 'location_form': location_form,
                 'business_form': business_form, 'account_features': profile_features(user),
                 'following_count': user.business_follows.count(),
                 'business_follower_count': company.followers.count() if company else 0, **extra}
@@ -4134,13 +4147,31 @@ def profile_edit(request):
                 if field not in ('logo', 'banner_image'):
                     business_data.setdefault(field, getattr(company, field))
             business_form = BusinessDetailsForm(business_data, f, instance=company)
+        valid_personal = True
+        if business_user:
+            personal_data = p.copy()
+            for field in DashboardPersonalForm.Meta.fields:
+                if field != 'photo': personal_data.setdefault(field, getattr(user, field))
+            personal_form = DashboardPersonalForm(personal_data, f, instance=user)
+            valid_personal = personal_form.is_valid()
+            if seeker:
+                seeker_data = p.copy()
+                for field in DashboardSeekerForm.Meta.fields:
+                    if field == 'open_to_relocate' and p.get('dashboard_profile'): continue
+                    if field != 'resume': seeker_data.setdefault(field, getattr(seeker, field))
+                seeker_form = DashboardSeekerForm(seeker_data, f, instance=seeker)
+                valid_personal = seeker_form.is_valid() and valid_personal
         valid_location = location_form.is_valid()
         valid_business = business_form.is_valid() if business_form else True
         business_phone = p.get('business_phone', user.business_phone).strip()
         if business_phone and (not re.fullmatch(r'[0-9]{10}', business_phone) or User.objects.exclude(pk=user.pk).filter(business_phone=business_phone).exists()):
             location_form.add_error(None, 'Enter a unique 10-digit business phone number.')
             valid_location = False
-        if not (valid_location and valid_business):
+        if not (valid_location and valid_business and valid_personal):
+            if business_user:
+                response = employer_dashboard(request, profile_editor=context(open_profile_editor=True))
+                response.status_code = 400
+                return response
             return render(request, 'profile_edit.html', context(), status=400)
         for field, value in location_form.cleaned_data.items():
             setattr(user, field, value)
@@ -4160,8 +4191,14 @@ def profile_edit(request):
         request.session['offers_pincode'] = user.pincode
         request.session['news_pincode'] = user.pincode
 
+        if business_user and seeker_form:
+            seeker = seeker_form.save()
+            if personal_form.cleaned_data.get('photo'):
+                seeker.photo = personal_form.cleaned_data['photo']
+                seeker.save(update_fields=['photo'])
+
         # Seeker profile fields
-        if seeker:
+        if seeker and not business_user:
             if 'photo' in f:
                 seeker.photo = f['photo']
             dob_str = p.get('dob', '').strip()
@@ -4199,11 +4236,15 @@ def profile_edit(request):
         next_url = request.POST.get('next') or request.GET.get('next') or ''
         missing = _application_missing_fields(seeker)
         if re.fullmatch(r'/jobs/[0-9]+/apply/', next_url) and missing:
+            if business_user:
+                response = employer_dashboard(request, profile_editor=context(application_missing=missing, open_profile_editor=True))
+                response.status_code = 400
+                return response
             return render(request, 'profile_edit.html', context(application_missing=missing), status=400)
         messages.success(request, 'Profile updated successfully.')
         if next_url:
             return redirect(safe_return(request))
-        return redirect('profile_edit')
+        return redirect('/employer/dashboard/#my-profile' if business_user else 'profile_edit')
 
     return render(request, 'profile_edit.html', context(application_missing=_application_missing_fields(seeker) if re.fullmatch(r'/jobs/[0-9]+/apply/', request.GET.get('next', '')) else []))
 

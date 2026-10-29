@@ -9,7 +9,7 @@ from django.shortcuts import get_object_or_404, redirect
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
-from .models import BusinessFollow, CompanyProfile
+from .models import BusinessFollow, CompanyProfile, JobSeekerProfile, User
 
 PIN = re.compile(r'[1-9][0-9]{5}')
 
@@ -38,6 +38,32 @@ class BusinessDetailsForm(forms.ModelForm):
 
     def clean_review_reward_percent(self):
         return self.cleaned_data.get('review_reward_percent') or 0
+
+
+class DashboardPersonalForm(forms.ModelForm):
+    photo = forms.ImageField(required=False, label='Personal profile photo')
+
+    class Meta:
+        model = User
+        fields = ['first_name', 'last_name', 'email', 'whatsapp', 'city', 'address', 'photo']
+
+
+class DashboardSeekerForm(forms.ModelForm):
+    class Meta:
+        model = JobSeekerProfile
+        fields = ['dob', 'gender', 'experience', 'education', 'education_details', 'primary_skill',
+                  'skills', 'languages', 'preferred_roles', 'preferred_location', 'open_to_relocate',
+                  'job_category', 'blue_collar_type', 'salary_min', 'portfolio_url', 'resume']
+
+
+def dashboard_profile_context(user, company):
+    seeker = getattr(user, 'seeker', None)
+    return {'company': company, 'business_form': BusinessDetailsForm(instance=company) if company else None,
+            'personal_form': DashboardPersonalForm(instance=user),
+            'seeker_form': DashboardSeekerForm(instance=seeker) if seeker else None,
+            'location_form': LocationPreferencesForm(initial={field: getattr(user, field) for field in LocationPreferencesForm.base_fields}),
+            'account_features': profile_features(user), 'following_count': user.business_follows.count(),
+            'business_follower_count': company.followers.count() if company else 0}
 
 
 def selected_area(request):

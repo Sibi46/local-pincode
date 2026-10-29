@@ -20,10 +20,23 @@ class AccountFeatureTests(TestCase):
     def login(self, user=None):
         self.client.force_login(user or self.customer, backend='django.contrib.auth.backends.ModelBackend')
 
+    def test_business_profile_editor_is_inside_dashboard(self):
+        self.login(self.owner)
+        self.assertRedirects(self.client.get('/profile/edit/'), '/employer/dashboard/#my-profile', fetch_redirect_response=False)
+        response = self.client.get('/employer/dashboard/')
+        self.assertContains(response, 'id="dashboard-profile-form"')
+        for field in ['first_name', 'last_name', 'email', 'photo', 'company_name', 'logo', 'banner_image', 'preferred_pincode_1', 'preferred_pincode_2']:
+            self.assertContains(response, 'name="' + field + '"')
+        self.assertContains(response, "window.addEventListener('hashchange'")
+        saved = self.client.post('/employer/dashboard/', {'dashboard_profile':'1', 'first_name':'Dashboard owner'})
+        self.assertRedirects(saved, '/employer/dashboard/#my-profile', fetch_redirect_response=False)
+        self.owner.refresh_from_db()
+        self.assertEqual(self.owner.first_name, 'Dashboard owner')
+
     def test_profile_is_full_account_hub_for_personal_and_business_users(self):
         for user in (self.customer, self.owner):
             self.login(user)
-            response = self.client.get('/profile/edit/')
+            response = self.client.get('/profile/edit/', follow=True)
             self.assertContains(response, 'Your profile. All your features.')
             for title in ['Following businesses', 'School Corner', 'Campus', 'Health', 'My accounts', 'Messages', 'Refer &amp; Earn']:
                 self.assertContains(response, title)
@@ -39,7 +52,7 @@ class AccountFeatureTests(TestCase):
         response = self.client.post('/profile/edit/', {'company_name': 'Renamed Local Store', 'description': 'Fresh produce and groceries.',
             'industry': 'Groceries', 'company_size': '2-10', 'website': 'https://example.com', 'business_phone': '9000000000',
             'pincode': '600073', 'preferred_pincode_1': '600001', 'preferred_pincode_2': '600002'})
-        self.assertRedirects(response, '/profile/edit/', fetch_redirect_response=False)
+        self.assertRedirects(response, '/employer/dashboard/#my-profile', fetch_redirect_response=False)
         self.company.refresh_from_db()
         self.owner.refresh_from_db()
         self.assertEqual(self.company.company_name, 'Renamed Local Store')
@@ -47,7 +60,7 @@ class AccountFeatureTests(TestCase):
         self.assertEqual(self.owner.business_phone, '9000000000')
         dashboard = self.client.get('/employer/dashboard/')
         self.assertContains(dashboard, 'Renamed Local Store')
-        self.assertContains(dashboard, "window.location.href='/profile/edit/'")
+        self.assertContains(dashboard, "showSection('my-profile',this)")
         self.assertEqual(dashboard.context['profile'].website, 'https://example.com')
 
     def test_invalid_settings_are_rejected_before_any_user_or_business_changes(self):

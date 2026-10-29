@@ -43,7 +43,7 @@ class PdfReportTests(TestCase):
                 user.refresh_from_db()
                 self.assertTrue(Path(user.seeker.photo.path).exists())
                 for route in ('/', '/profile/edit/'):
-                    self.assertContains(self.client.get(route), user.seeker.photo.url)
+                    self.assertContains(self.client.get(route, follow=True), user.seeker.photo.url)
 
     def test_quiz_home_link_has_no_question_mark(self):
         response = self.client.get('/quiz/play/')
