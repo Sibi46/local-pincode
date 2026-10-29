@@ -23,7 +23,7 @@ body{background:#f5f7fb}.biz-directory{max-width:1100px;margin:auto;padding:32px
 {% block content %}
 <main class="biz-directory">
 <header class="biz-hero"><span class="biz-eyebrow">Discover your neighbourhood</span>
-<h1>Businesses near you</h1><p>Find local shops, services and the people behind them.</p>
+<div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:24px"><div><h1>Businesses near you</h1><p style="margin-bottom:0">Find local shops, services and the people behind them.</p></div><a href="{% url 'register' %}?type=company" style="display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:12px 20px;border-radius:12px;background:#0a66c2;color:#fff;font-size:14px;font-weight:700;text-decoration:none">Register your business</a></div>
 <form method="get" class="biz-search" role="search">
 <label for="business-query">Business name<input id="business-query" name="q" value="{{ query }}" placeholder="Search shops, companies and more"></label>
 <label for="business-pincode">Pincode<input id="business-pincode" name="pincode" value="{{ pincode }}" placeholder="e.g. 600073" inputmode="numeric" pattern="[0-9]{6}" maxlength="6"></label>
