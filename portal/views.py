@@ -53,7 +53,10 @@ def portal_home(request):
         communities = communities.filter(Q(name__icontains=q) | Q(page_id__icontains=q) | Q(purpose__icontains=q))
 
     categories = Category.objects.all()
-    upcoming_events = Event.objects.filter(is_active=True, date__gte=timezone.now().date()).order_by('date')[:6]
+    upcoming_events = Event.objects.filter(is_active=True, date__gte=timezone.now().date())
+    if pincode:
+        upcoming_events = upcoming_events.filter(pincode=pincode)
+    upcoming_events = upcoming_events.order_by('date')[:6]
 
     return render(request, 'portal/home.html', {
         'communities': communities,

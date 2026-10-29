@@ -174,7 +174,7 @@ def home(request):
 
     # ── Business logo strip ─────────────────────────────────────────────────────
     from .models import CompanyProfile
-    business_pincode = request.user.pincode if request.user.is_authenticated else ''
+    business_pincode = selected_area(request)
     directory = CompanyProfile.objects.filter(user__is_active=True).exclude(company_name='').select_related('user')
     if business_pincode:
         directory = directory.filter(user__pincode=business_pincode)

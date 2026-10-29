@@ -116,6 +116,7 @@ class AccountFeatureTests(TestCase):
         self.client.post('/area/select/',{'pincode':'600001','next':'/'})
         self.customer.refresh_from_db()
         self.assertEqual(self.customer.pincode,'600073')
+        self.assertEqual(self.client.get('/').context['business_pincode'],'600001')
         self.assertEqual(self.client.get('/businesses/').context['pincode'],'600001')
         self.assertEqual(self.client.get('/businesses/?pincode=600073').context['pincode'],'600073')
         self.assertEqual(self.client.get('/businesses/?pincode=').context['pincode'],'')
