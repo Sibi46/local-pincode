@@ -54,8 +54,8 @@ class UsabilityReportTests(TestCase):
     def test_profile_and_mobile_navigation_have_consistent_routes(self):
         self.client.force_login(self.owner)
         response = self.client.get('/advertiser/dashboard/')
-        for expected in ('data-profile-home', 'data-mobile-home', 'data-mobile-profile',
-                         'aria-controls="profileDrop"', 'aria-controls="mobileMenu"',
+        for expected in ('aria-label="Site header"', 'aria-label="Our Pincode home"',
+                         'aria-label="My profile and features"', 'href="/profile/edit/"',
                          'href="/ads/post/"'):
             self.assertContains(response, expected)
         self.assertNotContains(response, 'href="/advertise/dashboard/"')

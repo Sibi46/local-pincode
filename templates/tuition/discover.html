@@ -1,5 +1,5 @@
 {% extends 'base.html' %}{% load static %}
-{% block site_header %}{% endblock %}
+{% block site_header %}{% include 'includes/account_header.html' %}{% endblock %}
 {% block title %}Find a teacher · OURPINCODE{% endblock %}
 {% block extra_css %}<link rel="stylesheet" href="{% static 'tuition/learning.css' %}"><link rel="stylesheet" href="{% static 'tuition/discover.css' %}?v=branding-2">{% endblock %}
 {% block content %}

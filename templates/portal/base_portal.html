@@ -243,30 +243,7 @@ select.pform-input{background:#fff}
 <body>
 
 <!-- NAV -->
-<nav class="pnav">
-  <a href="/" class="pnav-logo">
-    <img src="/static/images/ourpincod.jpeg" alt="" class="p-nav-logo">
-  </a>
-  <div class="pnav-links">
-    <a href="/portal/communities/">Communities</a>
-    <a href="/portal/events/">Events</a>
-    <a href="/portal/videos/">Videos</a>
-    {% if user.is_authenticated %}
-    <a href="/portal/my/communities/">My Communities</a>
-    {% endif %}
-  </div>
-  {% if user.is_authenticated %}
-    <a href="/portal/my/notifications/" class="pnav-notif" title="Notifications">
-      <i class="fas fa-bell"></i>
-    </a>
-    <a href="/logout/" class="pbtn pnav-login" style="border:1.5px solid #e5e7eb">Logout</a>
-  {% else %}
-    <a href="/login/" class="pbtn pnav-login">Login</a>
-  {% endif %}
-  <div class="pnav-ham" onclick="document.getElementById('pmob').classList.toggle('open')">
-    <i class="fas fa-bars"></i>
-  </div>
-</nav>
+{% include 'includes/account_header.html' %}
 
 <!-- MOBILE MENU -->
 <div class="pmob-menu" id="pmob">

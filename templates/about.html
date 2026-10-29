@@ -133,18 +133,7 @@ a{text-decoration:none;color:inherit}
 <body>
 
 <!-- TOPBAR -->
-<div class="topbar">
-  <a href="/" class="tb-logo">
-    <img src="/static/images/ourpincod.jpeg" alt="OUR PINCODE">
-    <div class="tb-logo-text"><span class="ou">OUR</span><span class="pc">PINCODE</span><span style="color:#6b7280;font-size:12px;font-weight:600">.com</span></div>
-  </a>
-  <a href="/" class="tb-btn tb-home"><i class="fas fa-home"></i> Home</a>
-  {% if request.user.is_authenticated %}
-  <a href="/{% if request.user.is_employer %}employer{% else %}jobseeker{% endif %}/dashboard/" class="tb-btn tb-register">Dashboard</a>
-  {% else %}
-  <a href="/register/" class="tb-btn tb-register">Join Free</a>
-  {% endif %}
-</div>
+{% include 'includes/account_header.html' %}
 
 <!-- HERO -->
 <div class="about-hero">

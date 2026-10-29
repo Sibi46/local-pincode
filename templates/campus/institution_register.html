@@ -1,10 +1,7 @@
 ﻿{% extends 'campus/base_campus.html' %}
 {% block title %}Register Institution – Campus{% endblock %}
 {% block content %}
-<div class="cp-topbar">
-  <a href="/campus/" class="cp-back">&#8592;</a>
-  <div class="cp-topbar-title">OUR PINCODE <span>Campus</span></div>
-</div>
+{% include 'includes/account_header.html' %}
 <div class="cp-body">
   <div class="cp-sec">Register Your Institution</div>
   {% if messages %}{% for m in messages %}<div class="cp-error">{{ m }}</div>{% endfor %}{% endif %}

@@ -87,11 +87,11 @@ class NewsDeskTests(TestCase):
         self.assertEqual(self.client.get(self.url('api_feed')).json()['results'][0]['id'], self.other_item.pk)
         self.assertEqual(self.client.get(self.url('api_feed'), {'pincode': ''}).json()['total'], 2)
 
-    def test_front_page_shows_published_stories_without_pincode(self):
+    def test_front_page_remembers_selected_area_and_logout_restores_public_view(self):
         self.client.get(self.url('feed'), {'pincode': self.pin.code})
         response = self.client.get(self.url('feed'))
         self.assertContains(response, self.item.title)
-        self.assertContains(response, self.other_item.title)
+        self.assertNotContains(response, self.other_item.title)
         self.assertNotContains(response, self.draft.title)
         self.client.logout()
         response = self.client.get(self.url('feed'))

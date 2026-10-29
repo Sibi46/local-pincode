@@ -3,6 +3,7 @@ from .models import Advertisement
 
 
 def site_ads(request):
+    from .account import selected_area
     from .features import FEATURES, search_features
     photo_url = ''
     if request.user.is_authenticated:
@@ -28,6 +29,9 @@ def site_ads(request):
         pending_ad_posts = AdPost.objects.filter(status='pending').count()
 
     return {
+        'active_area': selected_area(request),
+        'saved_areas': list(dict.fromkeys(value for value in (
+            request.user.pincode, request.user.preferred_pincode_1, request.user.preferred_pincode_2) if value)) if request.user.is_authenticated else [],
         'site_ads': ads,
         'profile_photo_url': photo_url,
         'ads_by_type': by_type,

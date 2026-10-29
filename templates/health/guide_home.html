@@ -176,21 +176,7 @@
 </style>
 
 <!-- ── TOP BAR ── -->
-<div id="healthTopBar">
-  <h2><i class="fas fa-heartbeat"></i> Health Guide</h2>
-  <div id="foodStrip">
-    {% for item in items %}
-    <a class="food-bubble" href="/health/guide/{{ item.category.slug }}/{{ item.slug }}/">
-      {% if item.image %}
-        <img class="food-bubble-img" src="{{ item.image.url }}" alt="{{ item.name|title }}">
-      {% else %}
-        <div class="food-bubble-ph">{{ item.category.icon }}</div>
-      {% endif %}
-      <span class="food-bubble-name">{{ item.name|title }}</span>
-    </a>
-    {% endfor %}
-  </div>
-</div>
+
 
 <!-- ── MAIN BODY ── -->
 <div id="healthBody">

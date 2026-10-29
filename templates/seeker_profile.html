@@ -14,12 +14,7 @@
 <!-- ── TOP BAR ─────────────────────────────────────────────────────── -->
 <header class="sp-topbar">
   <a href="/" class="sp-logo"><img src="/static/images/ourpincod.jpeg" alt="OUR PINCODE" style="height:48px;width:auto;max-width:160px;object-fit:contain;display:block"></a>
-  <nav class="sp-topnav">
-    <a href="{% url 'jobseeker_dashboard' %}"><i class="fa-solid fa-gauge"></i> Dashboard</a>
-    <a href="{% url 'job_list' %}"><i class="fa-solid fa-briefcase"></i> Browse Jobs</a>
-    <a href="{% url 'chat_list' %}"><i class="fa-solid fa-comment-dots"></i> Messages</a>
-    <a href="{% url 'seeker_profile' %}" class="active"><i class="fa-solid fa-user"></i> My Profile</a>
-  </nav>
+  {% include 'includes/account_header.html' %}
   <div class="sp-user">
     <span>{{ user.get_full_name|default:user.username }}</span>
     <a href="{% url 'logout' %}" class="btn-logout">Logout</a>

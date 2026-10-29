@@ -91,8 +91,9 @@ def desk_context(request):
 @endpoint()
 def feed(request):
     values = request.GET.copy()
-    if api(request) and 'pincode' not in values:
-        values['pincode'] = request.session.get('news_pincode') or getattr(request.user, 'pincode', '')
+    if 'pincode' not in values:
+        from jobs.account import selected_area
+        values['pincode'] = selected_area(request) or request.session.get('news_pincode', '')
         # A resident profile may contain a pincode not yet configured in the hierarchy.
         if not re.fullmatch(r'[1-9][0-9]{5}', values['pincode'] or ''):
             values['pincode'] = ''

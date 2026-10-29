@@ -401,7 +401,7 @@
                         </div>
                         <div class="form-group full">
                             <label><i class="fas fa-map-marker-alt"></i> Pincode *</label>
-                            <input type="text" id="emp-pincode-input" name="emp_pincode" aria-describedby="business-pincode-help" placeholder="Enter 6-digit area pincode" maxlength="6" inputmode="numeric" pattern="\d{6}" required>
+                            <input type="text" id="emp-pincode-input" name="emp_pincode" value="{{ active_area }}" aria-describedby="business-pincode-help" placeholder="Enter 6-digit area pincode" maxlength="6" inputmode="numeric" pattern="\d{6}" required>
                             <small id="business-pincode-help" style="display:block;margin-top:6px;color:#64748b;font-size:12px">Enter any 6-digit pincode. No prior registration or location assignment is required.</small>
                         </div>
                         <div class="form-group full">
@@ -497,7 +497,7 @@
                         </div>
                         <div class="form-group full">
                             <label><i class="fas fa-map-pin"></i> PIN Code *</label>
-                            <input type="text" name="pincode" placeholder="6-digit PIN code" maxlength="6" pattern="[0-9]{6}" required>
+                            <input type="text" name="pincode" value="{{ active_area }}" placeholder="6-digit PIN code" maxlength="6" pattern="[0-9]{6}" required>
                         </div>
                         <div class="form-group full">
                             <label><i class="fas fa-store"></i> Business Name <span style="font-weight:400;color:#888">(optional)</span></label>
@@ -581,7 +581,7 @@
                     </div>
                     <div class="form-group full">
                         <label><i class="fas fa-map-pin"></i> PIN Code *</label>
-                        <input type="text" id="empPincode" name="pincode" placeholder="6-digit PIN code" maxlength="6" inputmode="numeric" pattern="[0-9]{6}" required>
+                        <input type="text" id="empPincode" name="pincode" value="{{ active_area }}" placeholder="6-digit PIN code" maxlength="6" inputmode="numeric" pattern="[0-9]{6}" required>
                         <small style="color:#888;font-size:12px">We show jobs near your area</small>
                     </div>
                     <div class="form-group full">
@@ -674,7 +674,7 @@
                     </div>
                     <div class="form-group full">
                         <label><i class="fas fa-map-pin"></i> PIN Code *</label>
-                        <input type="text" id="indPincode" name="pincode" placeholder="6-digit PIN code" maxlength="6" inputmode="numeric" pattern="[0-9]{6}" required>
+                        <input type="text" id="indPincode" name="pincode" value="{{ active_area }}" placeholder="6-digit PIN code" maxlength="6" inputmode="numeric" pattern="[0-9]{6}" required>
                         <small style="color:#888;font-size:12px">We show jobs near your area</small>
                     </div>
                     <div class="form-group full">
@@ -743,7 +743,7 @@
                     </div>
                     <div class="form-group full">
                         <label><i class="fas fa-map-pin"></i> PIN Code *</label>
-                        <input type="text" id="freePincode" name="pincode" placeholder="6-digit PIN code" maxlength="6" inputmode="numeric" pattern="[0-9]{6}" required>
+                        <input type="text" id="freePincode" name="pincode" value="{{ active_area }}" placeholder="6-digit PIN code" maxlength="6" inputmode="numeric" pattern="[0-9]{6}" required>
                         <small style="color:#888;font-size:12px">We show jobs near your area</small>
                     </div>
                     <div class="form-group full">

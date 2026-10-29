@@ -36,31 +36,7 @@
 <body class="dash-body">
 
 <!-- ══ TOPBAR ══════════════════════════════════════════════════════ -->
-<header class="dash-topbar">
-  <button class="dash-hamburger" onclick="toggleSidebar()" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:#0a66c2;font-size:22px;flex-shrink:0;align-items:center;gap:8px">
-    <i class="fas fa-bars"></i>
-    <span style="font-size:14px;font-weight:800;color:#0a66c2;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ request.user.get_full_name|default:request.user.username }}</span>
-  </button>
-  <a href="/" class="dash-logo"><img src="/static/images/ourpincod.jpeg" alt="OUR PINCODE" style="height:38px;width:auto;max-width:130px;object-fit:contain;display:block"></a>
-  <div class="dash-topbar-right">
-    <a href="/jobs/" class="dash-post-btn"><i class="fas fa-search"></i> Browse Jobs</a>
-    <a href="/flicks/" class="dash-post-btn" style="background:linear-gradient(135deg,#0a66c2,#004182)"><i class="fas fa-bolt"></i> Flicks</a>
-    <div class="dash-icon-btn" onclick="showSection('notifications')">
-      <i class="fas fa-bell"></i>
-      {% if unread_notif_count %}<span class="dash-badge">{{ unread_notif_count }}</span>{% endif %}
-    </div>
-    <div class="dash-avatar-wrap">
-      <div class="dash-avatar" style="overflow:hidden;padding:0">
-        {% if profile and profile.photo %}<img src="{{ profile.photo.url }}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">{% else %}{{ request.user.get_full_name|first|upper|default:request.user.username|first|upper }}{% endif %}
-      </div>
-      <div class="dash-avatar-menu">
-        <a href="/profile/"><i class="fas fa-user"></i> My Profile</a>
-        <a href="/profile/edit/"><i class="fas fa-user-edit"></i> Edit Profile</a>
-        <a href="/logout/"><i class="fas fa-sign-out-alt"></i> Sign Out</a>
-      </div>
-    </div>
-  </div>
-</header>
+{% include 'includes/account_header.html' %}
 
 <div class="dash-layout">
 

@@ -1,5 +1,5 @@
 {% extends 'newsdesk/base.html' %}{% load static %}
-{% block site_header %}{% if request.resolver_match.view_name != 'newsdesk:create' %}{{ block.super }}{% endif %}{% endblock %}
+{% block site_header %}{% include 'includes/account_header.html' %}{% endblock %}
 {% block news_content %}
 <section class="nd-form-page"><p class="nd-eyebrow">OURPINCODE NEWS DESK</p><h1>{{ heading }}</h1><p class="nd-muted">{{ intro }}</p>
 <form {% if request.resolver_match.view_name == 'newsdesk:create' or request.resolver_match.view_name == 'newsdesk:edit' %}data-news-upload{% endif %} class="nd-form nd-panel" method="post" enctype="multipart/form-data">{% csrf_token %}{{ form.non_field_errors }}

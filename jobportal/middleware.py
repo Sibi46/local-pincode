@@ -73,7 +73,7 @@ class LoginRequiredMiddleware:
                 return self.get_response(request)
 
             # Allow exact home
-            if path in {'/', '/favicon.ico', '/robots.txt', '/sitemap.xml', '/api/nearby-jobs/'} or path.startswith('/sitemaps/'):
+            if path in {'/', '/favicon.ico', '/robots.txt', '/sitemap.xml', '/api/nearby-jobs/', '/area/select/'} or path.startswith('/sitemaps/'):
                 return self.get_response(request)
 
             # Allow all public prefixes

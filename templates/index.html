@@ -333,36 +333,8 @@ a{text-decoration:none;color:inherit}
 <body>
 
 <!-- TOP BAR -->
-<div class="topbar">
-  <!-- Left: hamburger -->
-  <div class="tb-left">
-    <div class="hamburger" onclick="document.getElementById('mobMenu').classList.toggle('open')">
-      <i class="fas fa-bars"></i>
-    </div>
-    <!-- Desktop: full logo -->
-    <div class="tb-logo">
-      <a href="/" style="display:flex;align-items:center;text-decoration:none">
-        <img src="/static/images/ourpincod.jpeg" alt="OUR PINCODE"><span class="home-brand-copy"><strong>OUR<span>PINCODE</span></strong><small>&#8982; {% if request.user.pincode %}{{ request.user.pincode }}{% if request.user.city %} &middot; {{ request.user.city|truncatechars:18 }}{% endif %}{% else %}Pincode{% endif %}</small></span>
-      </a>
-    </div>
-  </div>
-
-  <!-- Center: empty on mobile (hero strip shows branding) -->
-  <div class="tb-center"></div>
-
-  <!-- Right: user actions -->
-  <div class="tb-right">
-    {% if request.user.is_authenticated %}
-
-      <a href="/{% if request.user.is_employer %}employer{% else %}jobseeker{% endif %}/dashboard/" class="tb-avatar-btn" title="{{ request.user.get_full_name|default:request.user.username }}">
-        {% if profile_photo_url %}<img src="{{ profile_photo_url }}" alt="Profile photo" data-profile-avatar>{% else %}{{ request.user.get_full_name|default:request.user.username|slice:":1"|upper }}{% endif %}
-      </a>
-    {% else %}
-      <a href="#regPop" class="tb-icon-btn" title="Create account" aria-label="Create account" aria-haspopup="dialog" onclick="window._regNextUrl=null;document.getElementById('regPop').classList.add('show');return false;"><i class="fas fa-user" aria-hidden="true"></i></a>
-      <a href="#" class="tb-btn tb-register" onclick="document.getElementById('regPop').classList.add('show');return false;" style="display:none" id="tb-reg-btn">Join</a>
-    {% endif %}
-  </div>
-</div>
+{% include 'includes/account_header.html' %}
+{% include 'includes/area_picker.html' %}
 
 <!-- SEARCH BAR (mobile) -->
 {% include "includes/feature_search.html" %}

@@ -115,25 +115,7 @@
 <body>
 
 <!-- TOPBAR -->
-<header class="dash-topbar">
-  <a href="/" class="dash-logo"><img src="/static/images/ourpincod.jpeg" alt="OUR PINCODE"></a>
-  <div class="dash-search-wrap">
-    <form action="/jobs/" method="get">
-      <input type="text" name="q" value="{{ q }}" placeholder="Job title, skill, keyword...">
-      {% if pincode %}<input type="hidden" name="pincode" value="{{ pincode }}">{% endif %}
-      {% if collar %}<input type="hidden" name="collar" value="{{ collar }}">{% endif %}
-      <button type="submit"><i class="fas fa-search"></i></button>
-    </form>
-  </div>
-  <div class="dash-topbar-right">
-    {% if user.is_authenticated %}
-    <a href="/jobseeker/dashboard/" style="font-size:13px;color:#4f46e5;text-decoration:none;font-weight:600">My Jobs</a>
-    {% else %}
-    <a href="/login/" style="font-size:13px;color:#4f46e5;text-decoration:none;font-weight:600">Login</a>
-    {% endif %}
-  </div>
-  <button class="dash-hamburger" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
-</header>
+{% include 'includes/account_header.html' %}
 
 <div id="jb-overlay" onclick="toggleSidebar()"></div>
 

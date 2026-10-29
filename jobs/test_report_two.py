@@ -64,7 +64,7 @@ class ReportTwoTests(TestCase):
         self.assertContains(response, "referrerPolicy: 'strict-origin-when-cross-origin'")
         self.assertNotContains(response, '{s}.tile.openstreetmap.org')
 
-    def test_advertiser_has_one_notification_bell(self):
+    def test_advertiser_has_one_account_icon(self):
         Advertiser.objects.create(user=self.owner, business_name='Report Two Store', status='pending')
         request = RequestFactory().get('/advertiser/dashboard/')
         request.user = self.owner
@@ -72,7 +72,7 @@ class ReportTwoTests(TestCase):
         request._messages = FallbackStorage(request)
         messages.success(request, 'Your advertiser profile was saved.')
         response = advertiser_dashboard(request)
-        self.assertEqual(response.content.count(b'aria-label="Notifications"'), 1)
+        self.assertEqual(response.content.count(b'aria-label="My profile and features"'), 1)
         self.assertContains(response, 'Your advertiser profile was saved.')
 
     def test_business_description_is_owned_persistent_and_escaped(self):

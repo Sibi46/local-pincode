@@ -1,11 +1,7 @@
 {% extends 'campus/base_campus.html' %}
 {% block title %}Apply – {{ opportunity.title }}{% endblock %}
 {% block content %}
-<div class="cp-topbar">
-  <a href="/campus/student/opportunities/" class="cp-back">&#8592;</a>
-  <div class="cp-topbar-title">OUR PINCODE <span>Campus</span></div>
-  <span class="cp-topbar-badge">Student</span>
-</div>
+{% include 'includes/account_header.html' %}
 <div class="cp-body">
   <div class="cp-sec">Apply for Opportunity</div>
   {% if messages %}{% for m in messages %}<div class="cp-error">{{ m }}</div>{% endfor %}{% endif %}

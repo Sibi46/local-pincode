@@ -47,6 +47,8 @@ class User(AbstractUser):
     address       = models.TextField(blank=True)
     city          = models.CharField(max_length=100, blank=True)
     pincode       = models.CharField(max_length=6, blank=True)
+    preferred_pincode_1 = models.CharField(max_length=6, blank=True)
+    preferred_pincode_2 = models.CharField(max_length=6, blank=True)
     referral_code = models.CharField(max_length=12, unique=True, blank=True, null=True)
     salesman_biz_id = models.CharField(max_length=16, unique=True, blank=True, null=True,
                                        help_text='Unique ID shared with salesman for business linkage')
@@ -94,6 +96,16 @@ class CompanyProfile(models.Model):
         if not self.company_id:
             self.company_id = f'CO-{self.pk:06d}'
             CompanyProfile.objects.filter(pk=self.pk).update(company_id=self.company_id)
+
+
+class BusinessFollow(models.Model):
+    company = models.ForeignKey(CompanyProfile, on_delete=models.CASCADE, related_name='followers')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='business_follows')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        constraints = [models.UniqueConstraint(fields=['company', 'user'], name='one_business_follow_per_user')]
 
 
 class BusinessReview(models.Model):

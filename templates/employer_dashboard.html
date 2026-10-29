@@ -128,22 +128,7 @@
 <body>
 
 <!-- TOPBAR -->
-<div class="ig-topbar">
-  <a href="/" class="ig-topbar-logo"><img src="/static/images/ourpincod.jpeg" alt="OUR PINCODE"></a>
-  <div class="ig-topbar-name">{% if profile %}{{ profile.company_name|truncatechars:20 }}{% else %}Dashboard{% endif %}</div>
-  <div class="ig-topbar-actions">
-    <a href="/flicks/" class="ig-icon-btn" title="Flicks"><i class="fas fa-bolt" style="color:#0a66c2"></i></a>
-    <div class="ig-icon-btn" onclick="showSection('notifications')" title="Notifications">
-      <i class="fas fa-bell"></i>
-      {% if unread_notif_count %}<span class="ig-badge">{{ unread_notif_count }}</span>{% endif %}
-    </div>
-    <div class="ig-icon-btn" onclick="showSection('messages')" title="Messages">
-      <i class="fas fa-comment-dots"></i>
-      {% if unread_msg_count %}<span class="ig-badge">{{ unread_msg_count }}</span>{% endif %}
-    </div>
-    <a href="/logout/" class="ig-icon-btn" title="Sign Out"><i class="fas fa-sign-out-alt"></i></a>
-  </div>
-</div>
+{% include 'includes/account_header.html' %}
 
 <div class="ig-wrap">
   <section style="padding:16px;background:#fff;border-bottom:1px solid #e5e7eb" aria-label="Registered businesses">
@@ -274,7 +259,7 @@
     <button type="button" class="ig-tab" onclick="showSection('coupons',this)" data-sec="coupons"><i class="fas fa-ticket-alt"></i>Coupons</button>
     <button type="button" class="ig-tab" onclick="window.location.href='/offers/post/'"><i class="fas fa-tag" style="color:#FF5722"></i>Offer</button>
     <button type="button" class="ig-tab" onclick="showSection('flicks',this)" data-sec="flicks"><i class="fas fa-bolt" style="color:#f59e0b"></i>Flicks</button>
-    <button type="button" class="ig-tab" onclick="showSection('my-profile',this)" data-sec="my-profile"><i class="fas fa-id-card"></i>Company Profile{% if profile_incomplete %} <span style="background:#e65100;color:#fff;border-radius:10px;padding:1px 5px;font-size:9px">!</span>{% endif %}</button>
+    <button type="button" class="ig-tab" onclick="window.location.href='/profile/edit/'" data-sec="my-profile"><i class="fas fa-id-card"></i>Company Profile{% if profile_incomplete %} <span style="background:#e65100;color:#fff;border-radius:10px;padding:1px 5px;font-size:9px">!</span>{% endif %}</button>
     <button type="button" class="ig-tab" onclick="window.location.href='/advertiser/dashboard/'"><i class="fas fa-bullhorn"></i>Ads</button>
     <button type="button" class="ig-tab" onclick="window.location.href='/vouchers/business/register/'"><i class="fas fa-gift" style="color:#7c3aed"></i>Voucher</button>
     <button type="button" class="ig-tab" onclick="window.location.href='/quiz/'"><i class="fas fa-brain" style="color:#7c3aed"></i>Quiz</button>

@@ -59,25 +59,7 @@
 <body class="dash-body">
 
 <!-- TOPBAR -->
-<header class="dash-topbar">
-  <a href="/" class="dash-logo"><img src="/static/images/ourpincod.jpeg" alt="OUR PINCODE" style="height:38px;width:auto;max-width:130px;object-fit:contain;display:block"></a>
-  <div class="dash-topbar-right">
-    {% if request.user.is_authenticated %}
-    <div class="dash-avatar-wrap">
-      <div class="dash-avatar">{% if profile_photo_url %}<img src="{{ profile_photo_url }}" alt="Profile photo" data-profile-avatar>{% else %}{{ request.user.get_full_name|first|upper|default:request.user.username|first|upper }}{% endif %}</div>
-      <div class="dash-avatar-menu">
-        {% if request.user.is_employer %}
-        <a href="/employer/dashboard/"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
-        {% else %}
-        <a href="/jobseeker/dashboard/"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
-        {% endif %}
-        <a href="/logout/"><i class="fas fa-sign-out-alt"></i> Sign Out</a>
-      </div>
-    </div>
-    {% endif %}
-  </div>
-  <button class="dash-hamburger" onclick="toggleSidebar()" style="display:none;background:none;border:none;cursor:pointer;padding:6px;color:#0a66c2;font-size:22px;flex-shrink:0;margin-left:8px"><i class="fas fa-bars"></i></button>
-</header>
+{% include 'includes/account_header.html' %}
 
 <div class="dash-layout" style="grid-template-columns:240px 1fr;gap:24px;max-width:1100px;margin:0 auto;padding:24px 20px 80px;align-items:start">
 
@@ -133,11 +115,15 @@
     {% endfor %}
     {% endif %}
 
+    {% include 'includes/profile_features.html' %}
+    {% if location_form.errors or business_form.errors %}<div class="account-errors" role="alert">Please correct the fields below.{{ location_form.errors }}{{ business_form.errors }}</div>{% endif %}
     <form method="POST" enctype="multipart/form-data" id="profileForm">
       {% csrf_token %}
       <input type="hidden" name="next" value="{{ request.GET.next }}">
       <input type="file" id="photoInput" name="photo" accept="image/*" style="display:none" onchange="previewPhoto(this)">
 
+      {% include 'includes/business_profile_form.html' %}
+      <div class="dsec-card"><label for="photoInput" class="business-follow-button" style="cursor:pointer">Change profile photo</label><p class="pe-note">Your personal photo is separate from your business logo.</p></div>
       <!-- Personal Info -->
       <div class="dsec-card">
         <div class="dsec-card-title"><i class="fas fa-user"></i> Personal Info</div>
@@ -202,13 +188,14 @@
       </div>
       {% endif %}
 
+      <section class="dsec-card" id="profile-location"><div class="dsec-card-title">Preferred areas (Quest pincodes)</div><p class="pe-note">Keep one main pincode and save up to two other areas you want to explore. These do not change your business address.</p><div class="pe-grid"><div class="pe-field"><label class="pe-label" for="preferredAreaOne">Preferred pincode 1</label><input class="pe-input" id="preferredAreaOne" name="preferred_pincode_1" value="{{ location_form.preferred_pincode_1.value|default_if_none:'' }}" inputmode="numeric" pattern="[1-9][0-9]{5}" maxlength="6" placeholder="Optional 6-digit pincode"></div><div class="pe-field"><label class="pe-label" for="preferredAreaTwo">Preferred pincode 2</label><input class="pe-input" id="preferredAreaTwo" name="preferred_pincode_2" value="{{ location_form.preferred_pincode_2.value|default_if_none:'' }}" inputmode="numeric" pattern="[1-9][0-9]{5}" maxlength="6" placeholder="Optional 6-digit pincode"></div></div></section>
       <!-- Location -->
       <div class="dsec-card">
         <div class="dsec-card-title"><i class="fas fa-map-marker-alt"></i> Location</div>
         <div class="pe-grid">
           <div class="pe-field">
             <label class="pe-label"><i class="fas fa-map-pin"></i> PIN Code</label>
-            <input type="text" name="pincode" value="{{ request.user.pincode }}" placeholder="6-digit PIN code" maxlength="6" class="pe-input" id="editPincode" oninput="lookupPincode(this.value)">
+            <input type="text" name="pincode" value="{{ location_form.pincode.value|default_if_none:'' }}" pattern="[1-9][0-9]{5}" inputmode="numeric" placeholder="Main 6-digit pincode" maxlength="6" class="pe-input" id="editPincode" oninput="lookupPincode(this.value)">
           </div>
           <div class="pe-field">
             <label class="pe-label"><i class="fas fa-city"></i> City</label>
@@ -411,6 +398,7 @@
 var currentCollar = '{{ seeker.job_category|default:"" }}';
 
 function pickCollar(type) {
+  if (!document.getElementById('collarInput')) return;
   currentCollar = type;
   document.getElementById('collarInput').value = type;
   document.getElementById('optBlue').className = 'collar-opt' + (type === 'blue' ? ' selected-blue' : '');

@@ -40,7 +40,8 @@ def _is_member(community, user):
 
 def portal_home(request):
     communities = Community.objects.filter(is_active=True, is_verified=True).order_by('-created_at')
-    pincode = request.GET.get('pincode', '').strip()
+    from jobs.account import selected_area
+    pincode = selected_area(request)
     category = request.GET.get('category', '').strip()
     q = request.GET.get('q', '').strip()
 
@@ -65,7 +66,8 @@ def portal_home(request):
 def community_list(request):
     communities = Community.objects.filter(is_active=True, is_verified=True)
     q       = request.GET.get('q', '').strip()
-    pincode = request.GET.get('pincode', '').strip()
+    from jobs.account import selected_area
+    pincode = selected_area(request)
     cat     = request.GET.get('category', '').strip()
     if q:
         communities = communities.filter(Q(name__icontains=q) | Q(page_id__icontains=q))

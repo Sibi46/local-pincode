@@ -37,17 +37,7 @@
 </style>
 
 <!-- TOP BAR -->
-<div class="cp-topbar">
-  <a href="/" class="cp-back">&#8592;</a>
-  <div class="cp-topbar-title">OUR PINCODE <span>Campus</span></div>
-  {% if request.user.is_authenticated %}
-    {% if role == 'po' %}<a href="/campus/po/dashboard/" class="cp-topbar-badge">PO Dashboard</a>
-    {% elif role == 'hod' %}<a href="/campus/hod/dashboard/" class="cp-topbar-badge">HOD Dashboard</a>
-    {% elif role == 'student' %}<a href="/campus/student/dashboard/" class="cp-topbar-badge">My Dashboard</a>
-    {% elif role == 'company' %}<a href="/campus/company/dashboard/" class="cp-topbar-badge">Company</a>
-    {% endif %}
-  {% endif %}
-</div>
+{% include 'includes/account_header.html' %}
 
 <!-- HERO -->
 <div class="cp-hero">

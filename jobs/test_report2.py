@@ -42,7 +42,7 @@ class ReportTwoTests(TestCase):
         self.assertContains(response, 'copyRefPopup(event)')
         self.client.post(reverse('employer_profile_save'), {})
         response = self.client.get('/businesses/')
-        self.assertContains(response, 'aria-label="Notifications"', count=1)
+        self.assertContains(response, 'aria-label="My profile and features"', count=1)
 
     def test_post_job_redirects_to_its_actual_state_and_preserves_pin(self):
         self.login(self.owner)

@@ -1,11 +1,7 @@
 ﻿{% extends 'campus/base_campus.html' %}
 {% block title %}Applications – Campus Admin{% endblock %}
 {% block content %}
-<div class="cp-topbar">
-  <a href="/campus/admin/dashboard/" class="cp-back">&#8592;</a>
-  <div class="cp-topbar-title">OUR PINCODE <span>Campus</span></div>
-  <span class="cp-topbar-badge">Admin</span>
-</div>
+{% include 'includes/account_header.html' %}
 <div class="cp-body">
   <div style="font-size:18px;font-weight:800;color:#0F172A;margin-bottom:16px">All Applications</div>
   {% if applications %}

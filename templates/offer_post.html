@@ -73,21 +73,7 @@ textarea.op-input{min-height:90px;resize:vertical}
 .op-notice{background:#FFFBEB;border:1.5px solid #FDE68A;border-radius:14px;padding:14px;font-size:12px;color:#92400E;line-height:1.6;margin-bottom:16px}
 </style>
 
-<div class="op-topbar">
-  <a href="#" onclick="if(document.referrer)history.back();else window.location='/';return false;" class="back"><i class="fas fa-arrow-left"></i></a>
-  {% if company_profile and company_profile.logo %}
-    {% with ln=company_profile.logo.name|lower %}
-    {% if '.jpg' in ln or '.jpeg' in ln or '.png' in ln or '.gif' in ln or '.webp' in ln or '.svg' in ln %}
-      <img src="{{ company_profile.logo.url }}" alt="logo" style="height:36px;width:36px;border-radius:10px;object-fit:cover;border:2px solid #e5e7eb;flex-shrink:0">
-    {% else %}
-      <div style="width:36px;height:36px;border-radius:10px;background:#0a66c2;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:16px;flex-shrink:0">{{ company_profile.company_name|first|upper }}</div>
-    {% endif %}
-    {% endwith %}
-  {% elif company_profile %}
-    <div style="width:36px;height:36px;border-radius:10px;background:#0a66c2;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:16px;flex-shrink:0">{{ company_profile.company_name|first|upper }}</div>
-  {% endif %}
-  <h2>🔥 Post an Offer</h2>
-</div>
+
 
 <div class="op-wrap">
 

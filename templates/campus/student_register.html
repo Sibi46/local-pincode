@@ -1,10 +1,7 @@
 ﻿{% extends 'campus/base_campus.html' %}
 {% block title %}Student Registration – Campus{% endblock %}
 {% block content %}
-<div class="cp-topbar">
-  <a href="/campus/" class="cp-back">&#8592;</a>
-  <div class="cp-topbar-title">OUR PINCODE <span>Campus</span></div>
-</div>
+{% include 'includes/account_header.html' %}
 <div class="cp-body">
   <div class="cp-sec">Student Registration</div>
   <p style="font-size:12px;color:#64748B;margin-bottom:16px">If your college has already registered you, use the credentials given by your Placement Officer to login. Otherwise register here.</p>

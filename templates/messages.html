@@ -13,21 +13,7 @@
 <body class="msg-page">
 
 <!-- ── TOP BAR ─────────────────────────────────────────────────────── -->
-<header class="msg-topbar">
-  <a href="/" class="msg-logo">
-    <i class="fa-solid fa-location-dot"></i>
-    <span>OUR PINCODE<strong>Jobs</strong></span>
-  </a>
-  <div class="msg-topbar-title">
-    <i class="fa-solid fa-comment-dots"></i> Messages
-    {% if total_unread %}<span class="unread-pill">{{ total_unread }}</span>{% endif %}
-  </div>
-  <nav class="msg-topnav">
-    <a href="{% url 'home' %}"><i class="fa-solid fa-house"></i></a>
-    <a href="{% url 'job_list' %}"><i class="fa-solid fa-briefcase"></i></a>
-    <a href="{% url 'dashboard' %}"><i class="fa-solid fa-gauge"></i></a>
-  </nav>
-</header>
+{% include 'includes/account_header.html' %}
 
 <div class="msg-shell {% if active_conv %}has-active{% endif %}">
 

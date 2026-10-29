@@ -5,6 +5,7 @@ from django.contrib.auth import authenticate, login, logout, get_user_model
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import JsonResponse, HttpResponse
+from django.db import transaction
 from django.db.models import Q, F, Count
 from django.utils import timezone
 
@@ -116,7 +117,11 @@ def home(request):
 
 
     # ── Jobs & employers ────────────────────────────────
-    featured_jobs = public_jobs().select_related('posted_by').order_by('-created_at')[:8]
+    from .account import selected_area
+    local_jobs = public_jobs()
+    if selected_area(request):
+        local_jobs = local_jobs.filter(pincode=selected_area(request))
+    featured_jobs = local_jobs.select_related('posted_by').order_by('-created_at')[:8]
 
     # ── Stats — cached 5 min to avoid COUNT on every request ─────────────────
     from django.core.cache import cache
@@ -475,11 +480,12 @@ def dashboard(request):
 
 # ── JOBS ──────────────────────────────────────────────────────────────────────
 def job_list(request):
+    from .account import selected_area
     jobs = public_jobs()
 
     collar    = request.GET.get('collar', '')
     category  = request.GET.get('category', '')
-    pincode   = request.GET.get('pincode', '')
+    pincode   = selected_area(request)
     q         = request.GET.get('q', '')
     radius_km = request.GET.get('radius', '')
 
@@ -842,24 +848,30 @@ def edit_job(request, pk):
 
 
 def business_list(request):
+    from .account import selected_area
+    from .models import BusinessFollow
     from django.core.paginator import Paginator
     from django.db.models import Avg
     from datetime import timedelta
     businesses = CompanyProfile.objects.filter(user__is_active=True).exclude(company_name='').select_related('user')
-    pincode = request.GET.get('pincode', '').strip()
+    pincode = selected_area(request)
     query = request.GET.get('q', '').strip()
+    following_only = request.GET.get('following') == '1'
+    if following_only:
+        businesses = businesses.filter(followers__user=request.user) if request.user.is_authenticated else businesses.none()
     if pincode:
         businesses = businesses.filter(user__pincode=pincode)
     if query:
         businesses = businesses.filter(company_name__icontains=query)
-    businesses = businesses.annotate(review_count=Count('reviews'), average_rating=Avg('reviews__rating'),
-        recent_reviews=Count('reviews', filter=Q(reviews__created_at__gte=timezone.now() - timedelta(days=30))))
+    businesses = businesses.annotate(review_count=Count('reviews', distinct=True), average_rating=Avg('reviews__rating'),
+        recent_reviews=Count('reviews', filter=Q(reviews__created_at__gte=timezone.now() - timedelta(days=30)), distinct=True), follower_count=Count('followers', distinct=True))
     sort = request.GET.get('sort', 'name')
     ordering = {'popular': ['-review_count', '-average_rating', 'company_name'],
                 'trending': ['-recent_reviews', '-average_rating', 'company_name'],
                 'rating': ['-average_rating', '-review_count', 'company_name']}.get(sort, ['company_name'])
     return render(request, 'business_list.html', {
-        'sort': sort,
+        'sort': sort, 'following_only': following_only,
+        'followed_business_ids': set(BusinessFollow.objects.filter(user=request.user).values_list('company_id', flat=True)) if request.user.is_authenticated else set(),
         'businesses': Paginator(businesses.order_by(*ordering), 30).get_page(request.GET.get('page')),
         'pincode': pincode, 'query': query,
     })
@@ -962,6 +974,8 @@ def business_profile(request, company_id):
         'public_family': public_family,
         'joined_communities': joined_communities,
         'profile': profile,
+        'follower_count': profile.followers.count(),
+        'is_following': profile.followers.filter(user=request.user).exists() if request.user.is_authenticated else False,
         'owner': owner,
         'user_type': user_type,
         'offers': offers,
@@ -1190,6 +1204,13 @@ def employer_profile_save(request):
         return redirect('employer_dashboard')
     user = request.user
     p = request.POST
+    from .account import LocationPreferencesForm
+    locations = LocationPreferencesForm({field: p.get(field, getattr(user, field)) for field in LocationPreferencesForm.base_fields})
+    if not locations.is_valid():
+        messages.error(request, 'Use valid, different six-digit pincodes for your main and preferred areas.')
+        return redirect('/profile/edit/#profile-location')
+    for field, value in locations.cleaned_data.items():
+        setattr(user, field, value)
     description = p.get('description')
     if description is not None and len(description.strip()) > 1000:
         messages.error(request, 'Keep your business description within 1,000 characters.')
@@ -4081,8 +4102,10 @@ def my_accounts(request):
 
 
 @login_required
+@transaction.atomic
 def profile_edit(request):
     import re
+    from .account import LocationPreferencesForm, BusinessDetailsForm, profile_features, safe_return
     user = request.user
     company = getattr(user, 'company', None)
 
@@ -4092,18 +4115,50 @@ def profile_edit(request):
     else:
         seeker = getattr(user, 'seeker', None)
 
+    location_data = {field: getattr(user, field) for field in LocationPreferencesForm.base_fields}
+    location_form = LocationPreferencesForm(initial=location_data)
+    business_form = BusinessDetailsForm(instance=company) if company else None
+    def context(**extra):
+        return {'seeker': seeker, 'company': company, 'location_form': location_form,
+                'business_form': business_form, 'account_features': profile_features(user),
+                'following_count': user.business_follows.count(),
+                'business_follower_count': company.followers.count() if company else 0, **extra}
+
     if request.method == 'POST':
         p = request.POST
         f = request.FILES
+        location_form = LocationPreferencesForm({field: p.get(field, value) for field, value in location_data.items()})
+        if company:
+            business_data = p.copy()
+            for field in BusinessDetailsForm.Meta.fields:
+                if field not in ('logo', 'banner_image'):
+                    business_data.setdefault(field, getattr(company, field))
+            business_form = BusinessDetailsForm(business_data, f, instance=company)
+        valid_location = location_form.is_valid()
+        valid_business = business_form.is_valid() if business_form else True
+        business_phone = p.get('business_phone', user.business_phone).strip()
+        if business_phone and (not re.fullmatch(r'[0-9]{10}', business_phone) or User.objects.exclude(pk=user.pk).filter(business_phone=business_phone).exists()):
+            location_form.add_error(None, 'Enter a unique 10-digit business phone number.')
+            valid_location = False
+        if not (valid_location and valid_business):
+            return render(request, 'profile_edit.html', context(), status=400)
+        for field, value in location_form.cleaned_data.items():
+            setattr(user, field, value)
+        user.business_phone = business_phone
+
         # User fields
-        user.first_name = p.get('first_name', '').strip()
-        user.last_name  = p.get('last_name', '').strip()
-        user.email      = p.get('email', '').strip()
-        user.whatsapp   = p.get('whatsapp', '').strip()
-        user.city       = p.get('city', '').strip()
-        user.pincode    = p.get('pincode', '').strip()
-        user.address    = p.get('address', '').strip()
+        user.first_name = p.get('first_name', user.first_name).strip()
+        user.last_name  = p.get('last_name', user.last_name).strip()
+        user.email      = p.get('email', user.email).strip()
+        user.whatsapp   = p.get('whatsapp', user.whatsapp).strip()
+        user.city       = p.get('city', user.city).strip()
+        user.address    = p.get('address', user.address).strip()
         user.save()
+        if business_form:
+            business_form.save()
+        request.session['active_pincode'] = user.pincode
+        request.session['offers_pincode'] = user.pincode
+        request.session['news_pincode'] = user.pincode
 
         # Seeker profile fields
         if seeker:
@@ -4144,19 +4199,13 @@ def profile_edit(request):
         next_url = request.POST.get('next') or request.GET.get('next') or ''
         missing = _application_missing_fields(seeker)
         if re.fullmatch(r'/jobs/[0-9]+/apply/', next_url) and missing:
-            return render(request, 'profile_edit.html', {
-                'seeker': seeker, 'company': company, 'application_missing': missing,
-            }, status=400)
+            return render(request, 'profile_edit.html', context(application_missing=missing), status=400)
         messages.success(request, 'Profile updated successfully.')
-        if next_url.startswith('/'):
-            return redirect(next_url)
+        if next_url:
+            return redirect(safe_return(request))
         return redirect('profile_edit')
 
-    return render(request, 'profile_edit.html', {
-        'seeker': seeker,
-        'company': company,
-        'application_missing': _application_missing_fields(seeker) if re.fullmatch(r'/jobs/[0-9]+/apply/', request.GET.get('next', '')) else [],
-    })
+    return render(request, 'profile_edit.html', context(application_missing=_application_missing_fields(seeker) if re.fullmatch(r'/jobs/[0-9]+/apply/', request.GET.get('next', '')) else []))
 
 
 # ── CANDIDATE SEARCH ──────────────────────────────────────────────────────────
